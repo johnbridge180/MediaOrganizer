@@ -7,15 +7,30 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FC3CAC4A289B6C0B00C96BF0 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = FC3CAC49289B6C0B00C96BF0 /* main.c */; };
+		FC3CAC4F289B6C1D00C96BF0 /* organizer.c in Sources */ = {isa = PBXBuildFile; fileRef = FCC5FC31289B67E200617A0E /* organizer.c */; };
 		FC9722252890A5D000554912 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9722242890A5D000554912 /* AppDelegate.swift */; };
 		FC9722272890A5D000554912 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9722262890A5D000554912 /* ViewController.swift */; };
 		FC9722292890A5D100554912 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FC9722282890A5D100554912 /* Assets.xcassets */; };
 		FC97222C2890A5D100554912 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FC97222A2890A5D100554912 /* Main.storyboard */; };
 		FC972234289465AA00554912 /* Organizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC972233289465AA00554912 /* Organizer.swift */; };
-		FC972239289466EB00554912 /* organizer.c in Sources */ = {isa = PBXBuildFile; fileRef = FC972238289466EB00554912 /* organizer.c */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		FC3CAC45289B6C0B00C96BF0 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		FC3CAC47289B6C0B00C96BF0 /* MediaOrganizerCLI */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MediaOrganizerCLI; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC3CAC49289B6C0B00C96BF0 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		FC9722212890A5D000554912 /* MediaOrganizer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MediaOrganizer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC9722242890A5D000554912 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FC9722262890A5D000554912 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -24,11 +39,18 @@
 		FC97222D2890A5D100554912 /* MediaOrganizer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MediaOrganizer.entitlements; sourceTree = "<group>"; };
 		FC972233289465AA00554912 /* Organizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Organizer.swift; sourceTree = "<group>"; };
 		FC972236289466EA00554912 /* MediaOrganizer-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MediaOrganizer-Bridging-Header.h"; sourceTree = "<group>"; };
-		FC972237289466EB00554912 /* organizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = organizer.h; sourceTree = "<group>"; };
-		FC972238289466EB00554912 /* organizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = organizer.c; sourceTree = "<group>"; };
+		FCC5FC30289B67E200617A0E /* organizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = organizer.h; sourceTree = "<group>"; };
+		FCC5FC31289B67E200617A0E /* organizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = organizer.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		FC3CAC44289B6C0B00C96BF0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FC97221E2890A5D000554912 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -39,10 +61,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FC3CAC48289B6C0B00C96BF0 /* MediaOrganizerCLI */ = {
+			isa = PBXGroup;
+			children = (
+				FCC5FC30289B67E200617A0E /* organizer.h */,
+				FCC5FC31289B67E200617A0E /* organizer.c */,
+				FC3CAC49289B6C0B00C96BF0 /* main.c */,
+			);
+			path = MediaOrganizerCLI;
+			sourceTree = "<group>";
+		};
 		FC9722182890A5D000554912 = {
 			isa = PBXGroup;
 			children = (
 				FC9722232890A5D000554912 /* MediaOrganizer */,
+				FC3CAC48289B6C0B00C96BF0 /* MediaOrganizerCLI */,
 				FC9722222890A5D000554912 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -51,6 +84,7 @@
 			isa = PBXGroup;
 			children = (
 				FC9722212890A5D000554912 /* MediaOrganizer.app */,
+				FC3CAC47289B6C0B00C96BF0 /* MediaOrganizerCLI */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -72,8 +106,6 @@
 		FC9722352894667000554912 /* Organizer */ = {
 			isa = PBXGroup;
 			children = (
-				FC972237289466EB00554912 /* organizer.h */,
-				FC972238289466EB00554912 /* organizer.c */,
 				FC972236289466EA00554912 /* MediaOrganizer-Bridging-Header.h */,
 			);
 			path = Organizer;
@@ -82,6 +114,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		FC3CAC46289B6C0B00C96BF0 /* MediaOrganizerCLI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FC3CAC4B289B6C0B00C96BF0 /* Build configuration list for PBXNativeTarget "MediaOrganizerCLI" */;
+			buildPhases = (
+				FC3CAC43289B6C0B00C96BF0 /* Sources */,
+				FC3CAC44289B6C0B00C96BF0 /* Frameworks */,
+				FC3CAC45289B6C0B00C96BF0 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MediaOrganizerCLI;
+			productName = MediaOrganizerCLI;
+			productReference = FC3CAC47289B6C0B00C96BF0 /* MediaOrganizerCLI */;
+			productType = "com.apple.product-type.tool";
+		};
 		FC9722202890A5D000554912 /* MediaOrganizer */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FC9722302890A5D100554912 /* Build configuration list for PBXNativeTarget "MediaOrganizer" */;
@@ -109,6 +158,9 @@
 				LastSwiftUpdateCheck = 1320;
 				LastUpgradeCheck = 1320;
 				TargetAttributes = {
+					FC3CAC46289B6C0B00C96BF0 = {
+						CreatedOnToolsVersion = 13.2.1;
+					};
 					FC9722202890A5D000554912 = {
 						CreatedOnToolsVersion = 13.2.1;
 						LastSwiftMigration = 1320;
@@ -129,6 +181,7 @@
 			projectRoot = "";
 			targets = (
 				FC9722202890A5D000554912 /* MediaOrganizer */,
+				FC3CAC46289B6C0B00C96BF0 /* MediaOrganizerCLI */,
 			);
 		};
 /* End PBXProject section */
@@ -146,12 +199,20 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		FC3CAC43289B6C0B00C96BF0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FC3CAC4A289B6C0B00C96BF0 /* main.c in Sources */,
+				FC3CAC4F289B6C1D00C96BF0 /* organizer.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FC97221D2890A5D000554912 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				FC972234289465AA00554912 /* Organizer.swift in Sources */,
-				FC972239289466EB00554912 /* organizer.c in Sources */,
 				FC9722272890A5D000554912 /* ViewController.swift in Sources */,
 				FC9722252890A5D000554912 /* AppDelegate.swift in Sources */,
 			);
@@ -171,6 +232,24 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		FC3CAC4C289B6C0B00C96BF0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		FC3CAC4D289B6C0B00C96BF0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
 		FC97222E2890A5D100554912 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -344,6 +423,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		FC3CAC4B289B6C0B00C96BF0 /* Build configuration list for PBXNativeTarget "MediaOrganizerCLI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FC3CAC4C289B6C0B00C96BF0 /* Debug */,
+				FC3CAC4D289B6C0B00C96BF0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FC97221C2890A5D000554912 /* Build configuration list for PBXProject "MediaOrganizer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
