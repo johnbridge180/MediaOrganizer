@@ -14,7 +14,6 @@
 		FC9722272890A5D000554912 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9722262890A5D000554912 /* ViewController.swift */; };
 		FC9722292890A5D100554912 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FC9722282890A5D100554912 /* Assets.xcassets */; };
 		FC97222C2890A5D100554912 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FC97222A2890A5D100554912 /* Main.storyboard */; };
-		FC972234289465AA00554912 /* Organizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC972233289465AA00554912 /* Organizer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,7 +39,6 @@
 		FC9722282890A5D100554912 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FC97222B2890A5D100554912 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		FC97222D2890A5D100554912 /* MediaOrganizer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MediaOrganizer.entitlements; sourceTree = "<group>"; };
-		FC972233289465AA00554912 /* Organizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Organizer.swift; sourceTree = "<group>"; };
 		FC972236289466EA00554912 /* MediaOrganizer-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MediaOrganizer-Bridging-Header.h"; sourceTree = "<group>"; };
 		FCC5FC30289B67E200617A0E /* organizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = organizer.h; sourceTree = "<group>"; };
 		FCC5FC31289B67E200617A0E /* organizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = organizer.c; sourceTree = "<group>"; };
@@ -108,7 +106,6 @@
 				FC9722352894667000554912 /* Organizer */,
 				FC9722242890A5D000554912 /* AppDelegate.swift */,
 				FC9722262890A5D000554912 /* ViewController.swift */,
-				FC972233289465AA00554912 /* Organizer.swift */,
 				FC9722282890A5D100554912 /* Assets.xcassets */,
 				FC97222A2890A5D100554912 /* Main.storyboard */,
 				FC97222D2890A5D100554912 /* MediaOrganizer.entitlements */,
@@ -226,7 +223,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FC972234289465AA00554912 /* Organizer.swift in Sources */,
 				FC9722272890A5D000554912 /* ViewController.swift in Sources */,
 				FC9722252890A5D000554912 /* AppDelegate.swift in Sources */,
 			);
