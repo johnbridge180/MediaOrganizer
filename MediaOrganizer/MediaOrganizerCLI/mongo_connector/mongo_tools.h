@@ -17,6 +17,8 @@ struct MongoDBClientHolder {
     mongoc_database_t *database;
     mongoc_client_t *client;
     const char* db_name;
+    mongoc_collection_t *files_collection;
+    mongoc_collection_t *uploads_collection;
 };
 
 extern MongoDBClientHolder new_MongoDBClientHolder(const char* uri_string, const char* db_name);

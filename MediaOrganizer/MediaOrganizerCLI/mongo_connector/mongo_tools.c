@@ -103,6 +103,7 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
         bson_t *opts = bson_new();
         
         mongoc_collection_t *uploads_collection = mongoc_database_create_collection(dbclient_holder->database, uploads_collection_name, opts, &error1);
+        fprintf (stderr, "Error in createIndexes for uploads collection: %s\n", error1.message);
         
         //create indexes
         bson_t time_index_keys;
@@ -146,6 +147,7 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
         bson_destroy(create_indexes);
         bson_free(opts);
         mongoc_collection_destroy(uploads_collection);
+        dbclient_holder->uploads_collection = mongoc_client_get_collection(dbclient_holder->client, dbclient_holder->db_name, uploads_collection_name);
         //bson_free(error1);
     }
     
@@ -215,6 +217,7 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
         bson_destroy(create_indexes);
         bson_free(opts);
         mongoc_collection_destroy(files_collection);
+        dbclient_holder->files_collection = mongoc_client_get_collection(dbclient_holder->client, dbclient_holder->db_name, files_collection_name);
     }
     return 0;
 }

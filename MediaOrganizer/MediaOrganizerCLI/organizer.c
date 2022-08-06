@@ -15,6 +15,40 @@ bool organize(Organizer organizer) {
 bool organizeDir(Organizer organizer, char* dir_path) {
     DIR* dir = opendir(dir_path);
     struct dirent *dp;
+    MediaFileListNode node = NULL;
+    MediaFileListNode first_node = NULL;
+    first_node=node=new_MediaFileListNode(NULL);
+    
+    mongoc_bulk_operation_t *bulk = NULL;
+    bson_oid_t upload_oid;
+    if(organizer->dbclient_holder != NULL && organizer->dbclient_holder->uploads_collection != NULL && organizer->dbclient_holder->files_collection != NULL) {
+        //create upload
+        bson_error_t error;
+        bson_t reply;
+        
+        bson_t *upload_doc = bson_new();
+        
+        bson_oid_init (&upload_oid, NULL);
+        BSON_APPEND_OID (upload_doc, "_id", &upload_oid);
+        
+        struct timeval tv;
+
+        gettimeofday(&tv, NULL);
+        
+        unsigned long long millisecondsSinceEpoch =
+            (unsigned long long)(tv.tv_sec) * 1000 +
+            (unsigned long long)(tv.tv_usec) / 1000;
+        BSON_APPEND_DATE_TIME(upload_doc, "time", millisecondsSinceEpoch);
+        if(!mongoc_collection_insert_one(organizer->dbclient_holder->uploads_collection, upload_doc, NULL, &reply, &error)) {
+            fprintf(stderr, "%s\n", error.message);
+        }
+
+        bson_destroy(upload_doc);
+        
+        bulk = mongoc_collection_create_bulk_operation_with_opts(organizer->dbclient_holder->files_collection, NULL);
+        printf("hi");
+    }
+    
     while((dp = readdir(dir)) != NULL) {
         if(strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0) {
             //check if dir
@@ -22,7 +56,7 @@ bool organizeDir(Organizer organizer, char* dir_path) {
                 char new_dir_path[strlen(dir_path)+strlen(dp->d_name)+1];
                 sprintf(new_dir_path, "%s/%s", dir_path, dp->d_name);
                 if(!organizeDir(organizer, new_dir_path))
-                    printf("organize dir recursion fucked");
+                    printf("organize dir recursion failed");
                     //DO ERR Handling here
                     return false;
             }
@@ -31,10 +65,28 @@ bool organizeDir(Organizer organizer, char* dir_path) {
             sprintf(mediafile_path, "%s/%s", dir_path, dp->d_name);
             MediaFile file = new_MediaFile(dp->d_name, mediafile_path);
             if(MediaFile_setExtension(file)) {
-                if(MediaFile_setDate(file)) {
-                    if(!organizeFile(organizer,file)) {
+                if(MediaFile_setMetadata(file)) {
+                    if(!setDestinationPath(organizer, file)) {
                         //TODO: error handling
                         return false;
+                    }
+                    MediaFileListNode new_node = new_MediaFileListNode(file);
+                    node->next = new_node;
+                    node = new_node;
+                    printf("1: %s",file->destination_path);
+                    if(organizer->dbclient_holder != NULL && bulk != NULL) {
+                        bson_oid_init (&file->mongo_objectID, NULL);
+                        bson_t *file_doc = BCON_NEW("_id",BCON_OID(&file->mongo_objectID),
+                                                    "path",BCON_UTF8(file->destination_path),
+                                                    "time",BCON_DATE_TIME(file->date->unix_time*1000),
+                                                    "name",BCON_UTF8(file->name),
+                                                    "extension",BCON_UTF8(file->extension),
+                                                    "upload_id",BCON_OID(&upload_oid),
+                                                    "size",BCON_INT64(file->size),
+                                                    "upload_complete",BCON_BOOL(false));
+                        mongoc_bulk_operation_insert(bulk,file_doc);
+                        bson_destroy(file_doc);
+                        printf("2: %s",file->destination_path);
                     }
                 } else {
                     //TODO: error handling
@@ -47,15 +99,49 @@ bool organizeDir(Organizer organizer, char* dir_path) {
         }
         //printf("File created at: %s",ctime(&filestat.st_birthtime));
     }
-    return true;
-}
-
-bool organizeFile(Organizer organizer, MediaFile file) {
-    if(!setDestinationPath(organizer, file)) {
-        //TODO: error handling
-        return false;
+    if(bulk != NULL) {
+        bson_t reply;
+        bson_error_t error;
+        if(mongoc_bulk_operation_execute(bulk, &reply, &error)) {
+            char *str = bson_as_canonical_extended_json(&reply, NULL);
+               printf("%s\n", str);
+               bson_free(str);
+        } else {
+            fprintf (stderr, "Error: %s\n", error.message);
+            return false;
+        }
+        bson_destroy(&reply);
+        mongoc_bulk_operation_destroy(bulk);
     }
-    return copyFile(file->filepath, file->destination_path);
+    first_node = first_node->next;
+    while(first_node != NULL) {
+        printf("%s",first_node->file->filepath);
+        printf("%s",first_node->file->destination_path);
+        copyFile(first_node->file->filepath, first_node->file->destination_path);
+        
+        //do mongo update
+        if(organizer->dbclient_holder != NULL) {
+            bson_error_t error;
+            bson_t reply;
+            bson_t *query = BCON_NEW("_id",BCON_OID(&first_node->file->mongo_objectID));
+            bson_t *update = BCON_NEW("$set",
+                                      "{",
+                                      "upload_complete",BCON_BOOL(true),
+                                      "}");
+            if(!mongoc_collection_update_one(organizer->dbclient_holder->files_collection, query, update, NULL, &reply, &error)) {
+                fprintf (stderr, "%s\n", error.message);
+            } else {
+                char *str = bson_as_canonical_extended_json(&reply, NULL);
+                printf("%s\n", str);
+                bson_free(str);
+            }
+            bson_destroy(query);
+            bson_destroy(update);
+        }
+        
+        first_node = first_node->next;
+    }
+    return true;
 }
 
 bool copyFile(char* source, char* destination) {
@@ -86,7 +172,6 @@ bool copyFile(char* source, char* destination) {
 }
 
 bool setDestinationPath(Organizer organizer, MediaFile file) {
-    //createDirIfNotExist(organizer->destination.)
     if(!createSubDirIfNotExist(organizer->destination,file->date->year))
         return NULL;
     char year_dir_path[strlen(organizer->destination_path)+strlen(file->date->year)+1];
@@ -106,7 +191,7 @@ bool setDestinationPath(Organizer organizer, MediaFile file) {
     
     char destination_path[strlen(ext_dir_path)+strlen(file->name)+1];
     sprintf(destination_path, "%s/%s", ext_dir_path, file->name);
-    file->destination_path = destination_path;
+    file->destination_path = strdup(destination_path);
     return true;
 }
 
@@ -128,7 +213,6 @@ bool MediaFile_setExtension(MediaFile file) {
         }
     }
     if(dot_location == -1) {
-        printf("dot location fucked");
         return false;
     }
     file->extension = malloc(length-dot_location);
@@ -142,7 +226,7 @@ void str_tolower(char* str) {
         str[i] = tolower(str[i]);
     }
 }
-bool MediaFile_setDate(MediaFile file) {
+bool MediaFile_setMetadata(MediaFile file) {
     struct stat filestat;
     if(stat(file->filepath, &filestat)) {
         printf("stat error at %s",file->filepath);
@@ -196,9 +280,22 @@ bool MediaFile_setDate(MediaFile file) {
             month="December";
             break;
     }
-    file->date = new_MediaFileDate(month, day, year);
+    file->date = new_MediaFileDate(month, day, year, filestat.st_birthtimespec.tv_sec);
+    file->size = filestat.st_size;
     return true;
 }
+
+MediaFileListNode new_MediaFileListNode(MediaFile value) {
+    MediaFileListNode node = (MediaFileListNode) malloc(sizeof(struct MediaFileListNode));
+    if(node==NULL) {
+        printf("node NULL");
+        return NULL;
+    }
+    node->file = value;
+    node->next = NULL;
+    return node;
+}
+
 bool validateFolder(char* folder) {
     DIR* dir = opendir(folder);
     if(dir != NULL) {
@@ -231,7 +328,7 @@ MediaFile new_MediaFile(char* name, char* filepath) {
     file->filepath = strdup(filepath);
     return file;
 }
-MediaFileDate new_MediaFileDate(char* month, char* day, char* year) {
+MediaFileDate new_MediaFileDate(char* month, char* day, char* year, __darwin_time_t unix_time) {
     MediaFileDate date = (MediaFileDate) malloc(sizeof(struct MediaFileDate));
     if(date==NULL) {
         printf("DATE NULL");
@@ -240,9 +337,10 @@ MediaFileDate new_MediaFileDate(char* month, char* day, char* year) {
     date->month = month;
     date->day = day;
     date->year = year;
+    date->unix_time = unix_time;
     return date;
 }
-Organizer new_Organizer(char* source, char* destination) {
+Organizer new_Organizer(char* source, char* destination, MongoDBClientHolder dbclient_holder) {
     Organizer organizer = (Organizer) malloc(sizeof(struct Organizer));
     if(organizer==NULL) {
         printf("organizer null");
@@ -258,6 +356,7 @@ Organizer new_Organizer(char* source, char* destination) {
     }
     organizer->source_path = strdup(source);
     organizer->destination_path = strdup(destination);
+    organizer->dbclient_holder = dbclient_holder;
     return organizer;
 }
 

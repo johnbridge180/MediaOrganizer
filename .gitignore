@@ -1,4 +1,5 @@
 
-*.xcuserstate
+MediaOrganizer/MediaOrganizer.xcodeproj/xcuserdata
+MediaOrganizer/MediaOrganizer.xcodeproj/project.xcworkspace/xcuserdata
 MediaOrganizer/.DS_Store
 .DS_Store

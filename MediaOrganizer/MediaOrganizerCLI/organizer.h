@@ -31,6 +31,8 @@
 typedef struct Organizer *Organizer;
 typedef struct MediaFile *MediaFile;
 typedef struct MediaFileDate *MediaFileDate;
+typedef struct Upload *Upload;
+typedef struct MediaFileListNode *MediaFileListNode;
 
 struct Organizer {
     //SOURCE_PATH MUST NOT END IN "/"
@@ -39,6 +41,7 @@ struct Organizer {
     //DESTINATION_PATH MUST NOT END IN "/"
     char *destination_path;
     DIR* destination;
+    MongoDBClientHolder dbclient_holder;
 };
 struct MediaFile {
     char *name;
@@ -46,11 +49,23 @@ struct MediaFile {
     char *extension;
     MediaFileDate date;
     char *destination_path;
+    off_t size;
+    bson_oid_t mongo_objectID;
 };
 struct MediaFileDate {
     char *month;
     char *day;
     char *year;
+    __darwin_time_t unix_time;
+};
+/*struct Upload {
+    MediaFileListNode file_list;
+    off_t size;
+    bson_oid_t mongo_objectID;
+};*/
+struct MediaFileListNode {
+    MediaFile file;
+    MediaFileListNode next;
 };
 
 extern char* getFileExtension(char* filepath);
@@ -64,13 +79,13 @@ extern bool copyFile(char* source, char* destination);
 
 extern void str_tolower(char* str);
 
-extern bool organizeFile(Organizer organizer, MediaFile file);
 
 extern MediaFile new_MediaFile(char* name, char* sourceDirectory);
 extern bool MediaFile_setExtension(struct MediaFile *file);
-extern MediaFileDate new_MediaFileDate(char* month, char* day, char* year);
-extern bool MediaFile_setDate(MediaFile file);
+extern MediaFileDate new_MediaFileDate(char* month, char* day, char* year, __darwin_time_t unix_time);
+extern bool MediaFile_setMetadata(MediaFile file);
+extern MediaFileListNode new_MediaFileListNode(MediaFile value);
 
-extern Organizer new_Organizer(char* source, char* destination);
+extern Organizer new_Organizer(char* source, char* destination, MongoDBClientHolder dbclient_holder);
 
 #endif /* organizer_h */
