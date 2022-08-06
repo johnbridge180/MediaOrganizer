@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		FC3CAC4A289B6C0B00C96BF0 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = FC3CAC49289B6C0B00C96BF0 /* main.c */; };
 		FC3CAC4F289B6C1D00C96BF0 /* organizer.c in Sources */ = {isa = PBXBuildFile; fileRef = FCC5FC31289B67E200617A0E /* organizer.c */; };
+		FC3CAC50289B71E500C96BF0 /* mongo_tools.c in Sources */ = {isa = PBXBuildFile; fileRef = FC4FC72F289B67FA006E419F /* mongo_tools.c */; };
 		FC9722252890A5D000554912 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9722242890A5D000554912 /* AppDelegate.swift */; };
 		FC9722272890A5D000554912 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9722262890A5D000554912 /* ViewController.swift */; };
 		FC9722292890A5D100554912 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FC9722282890A5D100554912 /* Assets.xcassets */; };
@@ -31,6 +32,8 @@
 /* Begin PBXFileReference section */
 		FC3CAC47289B6C0B00C96BF0 /* MediaOrganizerCLI */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MediaOrganizerCLI; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC3CAC49289B6C0B00C96BF0 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		FC4FC72E289B67FA006E419F /* mongo_tools.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mongo_tools.h; sourceTree = "<group>"; };
+		FC4FC72F289B67FA006E419F /* mongo_tools.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mongo_tools.c; sourceTree = "<group>"; };
 		FC9722212890A5D000554912 /* MediaOrganizer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MediaOrganizer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC9722242890A5D000554912 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FC9722262890A5D000554912 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -64,11 +67,21 @@
 		FC3CAC48289B6C0B00C96BF0 /* MediaOrganizerCLI */ = {
 			isa = PBXGroup;
 			children = (
+				FC4FC72D289B67FA006E419F /* mongo_connector */,
 				FCC5FC30289B67E200617A0E /* organizer.h */,
 				FCC5FC31289B67E200617A0E /* organizer.c */,
 				FC3CAC49289B6C0B00C96BF0 /* main.c */,
 			);
 			path = MediaOrganizerCLI;
+			sourceTree = "<group>";
+		};
+		FC4FC72D289B67FA006E419F /* mongo_connector */ = {
+			isa = PBXGroup;
+			children = (
+				FC4FC72E289B67FA006E419F /* mongo_tools.h */,
+				FC4FC72F289B67FA006E419F /* mongo_tools.c */,
+			);
+			path = mongo_connector;
 			sourceTree = "<group>";
 		};
 		FC9722182890A5D000554912 = {
@@ -204,6 +217,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FC3CAC4A289B6C0B00C96BF0 /* main.c in Sources */,
+				FC3CAC50289B71E500C96BF0 /* mongo_tools.c in Sources */,
 				FC3CAC4F289B6C1D00C96BF0 /* organizer.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -238,6 +252,13 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
+				HEADER_SEARCH_PATHS = "/opt/homebrew/include/**";
+				LIBRARY_SEARCH_PATHS = "/opt/homebrew/lib/**";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = (
+					"-lmongoc-1.0",
+					"-lbson-1.0",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -248,8 +269,17 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
+				HEADER_SEARCH_PATHS = "/opt/homebrew/include/**";
+				LIBRARY_SEARCH_PATHS = "/opt/homebrew/lib/**";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = (
+					"-lmongoc-1.0",
+					"-lbson-1.0",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
+			name = Release;
+		};
 		FC97222E2890A5D100554912 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -301,6 +331,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 12.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -356,6 +387,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 12.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;

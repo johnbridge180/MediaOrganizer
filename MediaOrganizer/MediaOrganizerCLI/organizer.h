@@ -26,6 +26,7 @@
 #include <sys/sendfile.h>
 #endif
 
+#include "mongo_tools.h"
 
 typedef struct Organizer *Organizer;
 typedef struct MediaFile *MediaFile;
