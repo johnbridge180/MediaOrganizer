@@ -8,7 +8,6 @@
 #ifndef mongo_tools_h
 #define mongo_tools_h
 
-//#include <mongoc.h>
 #include <stdio.h>
 #include <mongoc/mongoc.h>
 

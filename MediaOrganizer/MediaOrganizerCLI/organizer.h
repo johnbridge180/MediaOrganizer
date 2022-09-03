@@ -27,6 +27,7 @@
 #endif
 
 #include "mongo_tools.h"
+#include "image_tools.h"
 
 typedef struct Organizer *Organizer;
 typedef struct MediaFile *MediaFile;
@@ -88,5 +89,8 @@ extern bool copyFile(char* source, char* destination);
 
 //string helper functions
 extern void str_tolower(char* str);
+
+extern int generatePreviewForMediaFile(Organizer organizer, MediaFile file);
+extern int generateThumbnailForMediaFile(Organizer organizer, MediaFile file);
 
 #endif /* organizer_h */

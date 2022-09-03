@@ -107,8 +107,11 @@ bool organizeDir(Organizer organizer, char* dir_path) {
         bson_destroy(&reply);
         mongoc_bulk_operation_destroy(bulk);
     }
+    //TODO: PROCESS THUMB+PREVIEW THREAD SPLIT HERE
     first_node = first_node->next;
     while(first_node != NULL) {
+        generatePreviewForMediaFile(organizer,first_node->file);
+        generateThumbnailForMediaFile(organizer,first_node->file);
         copyFile(first_node->file->filepath, first_node->file->destination_path);
         
         //do mongo update
@@ -336,7 +339,6 @@ bool copyFile(char* source, char* destination) {
         //int result = fcopyfile(input, output, 0, COPYFILE_ALL);
         int result = copyfile(source, destination, 0, COPYFILE_ALL);
     #else
-        printf("it thinks we're using linux");
         //sendfile will work with non-socket output (i.e. regular file) on Linux 2.6.33+
         int input, output;
         if ((input = open(source, O_RDONLY)) == -1) {
@@ -362,4 +364,149 @@ void str_tolower(char* str) {
     for(int i=0;i<strlen(str);i++) {
         str[i] = tolower(str[i]);
     }
+}
+
+int generatePreviewForMediaFile(Organizer organizer, MediaFile file) {
+    ImageData previews_data = new_ImageData(file->name,file->filepath);
+    RAW_initializeDataHolder(previews_data);
+    if(previews_data==NULL)
+        return -1;
+
+    int length = (int) strlen(file->destination_path);
+    int slash_location = -1;
+    for(int i=length-1; i>=0; i--) {
+        if (file->destination_path[i]=='/') {
+            slash_location = i;
+            break;
+        }
+    }
+    if(slash_location == -1) {
+        return -1;
+    }
+    
+    char *containing_folder = malloc(sizeof(char)*(slash_location+2));
+    memcpy(containing_folder, &file->destination_path[0], slash_location+1);
+    containing_folder[slash_location+1] = '\0';
+    DIR *containing_dir = opendir(containing_folder);
+    if(!createSubDirIfNotExist(containing_dir, "preview"))
+        return -2;
+    
+    char* name_noextension = malloc(sizeof(char)*(strlen(file->name)-strlen(file->extension))-sizeof(char));
+    memcpy(name_noextension,&file->name[0],strlen(file->name)-1-strlen(file->extension));
+    name_noextension[strlen(file->name)-1-strlen(file->extension)] = '\0';
+    
+    //8=strlen("preview/")
+    //5=strlen(".prev")
+    //4=strlen(".jpg")
+    //1 +1 for ending
+    char prev_output_path[strlen(containing_folder)+strlen(name_noextension)+17];
+    char prev_extension[4];
+    libraw_dcraw_process(previews_data->raw_data);
+    int err;
+    libraw_processed_image_t *prev = libraw_dcraw_make_mem_thumb(previews_data->raw_data, &err);
+    switch(prev->type) {
+        case LIBRAW_IMAGE_BITMAP:
+            sprintf(prev_extension,"p%cm",prev->colors==1?'g':'p');
+            break;
+        case LIBRAW_IMAGE_JPEG:
+            sprintf(prev_extension,"jpg");
+            break;
+        default:
+            return -5;
+    }
+    sprintf(prev_output_path,"%spreview/%s.prev.%s",containing_folder,name_noextension, prev_extension);
+    RAW_createPreviewFile(previews_data, prev_output_path);
+    
+    //Insert path into MongoDB
+    bson_error_t error;
+    bson_t reply;
+    bson_t *query = BCON_NEW("_id",BCON_OID(&file->mongo_objectID));
+    bson_t *update = BCON_NEW("$set",
+                              "{",
+                              "prev_path",BCON_UTF8(prev_output_path),
+                              "}");
+    if(!mongoc_collection_update_one(organizer->dbclient_holder->files_collection, query, update, NULL, &reply, &error)) {
+        fprintf (stderr, "%s\n", error.message);
+    } else {
+        char *str = bson_as_canonical_extended_json(&reply, NULL);
+        printf("%s\n", str);
+        bson_free(str);
+    }
+    bson_destroy(query);
+    bson_destroy(update);
+    
+    //TODO: grab and insert metadata into mongodb above ^^
+    return 0;
+}
+
+int generateThumbnailForMediaFile(Organizer organizer, MediaFile file) {
+    ImageData previews_data = new_ImageData(file->name,file->filepath);
+    RAW_initializeDataHolder(previews_data);
+    if(previews_data==NULL)
+        return -1;
+
+    int length = (int) strlen(file->destination_path);
+    int slash_location = -1;
+    for(int i=length-1; i>=0; i--) {
+        if (file->destination_path[i]=='/') {
+            slash_location = i;
+            break;
+        }
+    }
+    if(slash_location == -1) {
+        return -1;
+    }
+    
+    char *containing_folder = malloc(sizeof(char)*(slash_location+2));
+    memcpy(containing_folder, &file->destination_path[0], slash_location+1);
+    containing_folder[slash_location+1] = '\0';
+    DIR *containing_dir = opendir(containing_folder);
+    if(!createSubDirIfNotExist(containing_dir, "preview"))
+        return -2;
+    
+    char* name_noextension = malloc(sizeof(char)*(strlen(file->name)-strlen(file->extension))-sizeof(char));
+    memcpy(name_noextension,&file->name[0],strlen(file->name)-1-strlen(file->extension));
+    name_noextension[strlen(file->name)-1-strlen(file->extension)] = '\0';
+    
+    //8=strlen("preview/")
+    //6=strlen(".thumb")
+    //4=strlen(".jpg")
+    char prev_output_path[strlen(containing_folder)+strlen(name_noextension)+18];
+    char prev_extension[4];
+    libraw_dcraw_process(previews_data->raw_data);
+    int err;
+    libraw_processed_image_t *prev = libraw_dcraw_make_mem_thumb(previews_data->raw_data, &err);
+    switch(prev->type) {
+        case LIBRAW_IMAGE_BITMAP:
+            //sprintf(prev_extension,"p%cm",prev->colors==1?'g':'p');
+            //NO PPM THUMB FUNC YET;
+            return -1;
+            break;
+        case LIBRAW_IMAGE_JPEG:
+            sprintf(prev_extension,"jpg");
+            break;
+        default:
+            return -5;
+    }
+    sprintf(prev_output_path,"%spreview/%s.thumb.%s",containing_folder,name_noextension, prev_extension);
+    RAW_createThumbFile(previews_data, prev_output_path);
+
+    //Insert path into MongoDB
+    bson_error_t error;
+    bson_t reply;
+    bson_t *query = BCON_NEW("_id",BCON_OID(&file->mongo_objectID));
+    bson_t *update = BCON_NEW("$set",
+                              "{",
+                              "thumb_path",BCON_UTF8(prev_output_path),
+                              "}");
+    if(!mongoc_collection_update_one(organizer->dbclient_holder->files_collection, query, update, NULL, &reply, &error)) {
+        fprintf (stderr, "%s\n", error.message);
+    } else {
+        char *str = bson_as_canonical_extended_json(&reply, NULL);
+        printf("%s\n", str);
+        bson_free(str);
+    }
+    bson_destroy(query);
+    bson_destroy(update);
+    return 0;
 }
