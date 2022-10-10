@@ -56,6 +56,33 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
     FILE* fHandle;
     fHandle = fmemopen(prev->data, prev->data_size, "rb");
     
+    uint16_t readTag;
+    fread(&readTag,2,1,fHandle);
+    //TODO: make exif reader/writer endian-independent
+    //LITTLE ENDIAN ONLY RN vvvv
+    readTag = (readTag << 8) | (readTag >> 8);
+    unsigned char* exifData = NULL;
+    uint16_t exifData_size=0;
+    if(readTag==0xFFD8) {
+        while(readTag != 0xFFE1 && readTag != 0xFFD9) {
+            fread(&readTag,2,1,fHandle);
+            readTag = (readTag << 8) | (readTag >> 8);
+        }
+        if(readTag==0xFFE1) {
+            fread(&readTag,2,1,fHandle);
+            readTag = (readTag << 8) | (readTag >> 8);
+            exifData_size=readTag;
+            fseek(fHandle,-2L,SEEK_CUR);
+            exifData=malloc(exifData_size);
+            fread(exifData, readTag, 1, fHandle);
+        } else if(readTag==0xFFD9) {
+            printf("EOF w/ no APP1 Block");
+        }
+    } else {
+        printf("not valid JPEG, file starts with 2byte tag: %x",readTag);
+    }
+    
+    fseek(fHandle, 0, SEEK_SET);
     if(fHandle == NULL) {
         return -1;
     }
@@ -175,8 +202,41 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
         fprintf(stderr, "can't open %s\n", output_path);
         exit(1);
     }
-    //TODO: copy orientation EXIF data tag to output file (current issue - portrait photos result in landscape thumbnail)
-    fwrite(mem, mem_size, 1, outfile);
+    if(exifData_size>0) {
+        FILE* buffer_stream = fmemopen(mem, mem_size, "rb");
+        //copy EXIF data tag to output file if exists in original thumbnail
+        uint16_t readTag_2;
+        fread(&readTag_2,2,1,buffer_stream);
+        readTag_2 = (readTag_2 << 8) | (readTag_2 >> 8);
+        while(readTag_2 != 0xFFE0 && readTag_2 != 0xFFD9) {
+            readTag_2 = (readTag_2 << 8) | (readTag_2 >> 8);
+            fwrite(&readTag_2, 2, 1, outfile);
+            
+            fread(&readTag_2,2,1,buffer_stream);
+            readTag_2 = (readTag_2 << 8) | (readTag_2 >> 8);
+        }
+        if(readTag_2==0xFFE0) {
+            fread(&readTag_2,2,1,buffer_stream);
+            readTag_2 = (readTag_2 << 8) | (readTag_2 >> 8);
+            fseek(buffer_stream, (readTag_2-2), SEEK_CUR);
+            
+            fputc(0xFF, outfile);fputc(0xE1, outfile);
+            fwrite(exifData,exifData_size,1,outfile);
+        } else if(readTag_2==0xFFD9) {
+            fwrite(&readTag_2,2,1,outfile);
+        } else {
+            
+        }
+        char gotten_char = fgetc(buffer_stream);
+        while(feof(buffer_stream)==0) {
+            fputc(gotten_char,outfile);
+            gotten_char = fgetc(buffer_stream);
+        }
+        fclose(buffer_stream);
+        free(exifData);
+    } else {
+        fwrite(mem, mem_size, 1, outfile);
+    }
     fclose(outfile);
     
     /* Step 7: release JPEG compression object */
