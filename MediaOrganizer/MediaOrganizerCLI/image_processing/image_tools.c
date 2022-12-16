@@ -13,6 +13,7 @@ ImageData new_ImageData(const char* name, const char* path) {
         return NULL;
     holder->original_path = path;
     holder->name = name;
+    holder->params = NULL;
     return holder;
 }
 
@@ -30,12 +31,47 @@ int RAW_initializeDataHolder(ImageData data_holder) {
     
     data_holder->prev_extension = thumb->type == LIBRAW_THUMBNAIL_JPEG ? "jpg" : "ppm";
     data_holder->raw_data = raw_data;
-    data_holder->preview = thumb;
+    libraw_dcraw_clear_mem(thumb);
+    //data_holder->preview = thumb;
+    return 0;
+}
+
+void free_ImageData(ImageData data) {
+    libraw_recycle_datastream(data->raw_data);
+    libraw_recycle(data->raw_data);
+    libraw_close(data->raw_data);
+    if(data->params != NULL)
+        free(data->params);
+    free(data);
+}
+
+int RAW_setImageDataParams(ImageData data_holder) {
+    ImageDataParams params = (ImageDataParams) malloc(sizeof(struct ImageDataParams));
+    if(params==NULL)
+        return -1;
+    //Record lens data
+    params->lensname = data_holder->raw_data->lens.Lens;
+    params->focal_length = data_holder->raw_data->lens.makernotes.CurFocal;
+    params->aperture = data_holder->raw_data->lens.makernotes.CurAp;
+    
+    //record camera data
+    params->make = data_holder->raw_data->idata.make;
+    params->model = data_holder->raw_data->idata.model;
+    params->shutter_speed = data_holder->raw_data->other.shutter;
+    
+    //set latitude/longitude arrays
+    for(int i=0;i<3;i++) {
+        params->latitude[i] = data_holder->raw_data->other.parsed_gps.latitude[i];
+        params->longitude[i] = data_holder->raw_data->other.parsed_gps.longitude[i];
+    }
+    params->altitude = data_holder->raw_data->other.parsed_gps.altitude;
+    data_holder->params = params;
     return 0;
 }
 
 //CREDIT: libjpeg example.c
 int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
+    RAW_setImageDataParams(data_holder);
     libraw_dcraw_process(data_holder->raw_data);
     int err;
     libraw_processed_image_t *prev = libraw_dcraw_make_mem_thumb(data_holder->raw_data, &err);
@@ -46,7 +82,6 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
     struct jpeg_error_mgr j_err;
     
     unsigned long int imgWidth, imgHeight;
-    int numComponents;
     
     unsigned long int dwBufferBytes;
     unsigned char* lpData;
@@ -102,7 +137,6 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
     jpeg_start_decompress(&info);
     imgWidth = info.output_width;
     imgHeight = info.output_height;
-    numComponents = info.num_components;
     
     dwBufferBytes = imgWidth * imgHeight * 3;
     lpData = (unsigned char*)malloc(sizeof(unsigned char)*dwBufferBytes);
@@ -115,6 +149,7 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
     jpeg_finish_decompress(&info);
     jpeg_destroy_decompress(&info);
     fclose(fHandle);
+    libraw_dcraw_clear_mem(prev);
     
     //CREDIT: libjpeg example.c for sizeable amount of the rest of this function
     
@@ -197,6 +232,9 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
     /* Step 6: Finish compression */
     
     jpeg_finish_compress(&cinfo);
+    jpeg_destroy_compress(&cinfo);
+    
+    free(lpData);
     /* After finish_compress, we can close the output file. */
     if ((outfile = fopen(output_path, "wb")) == NULL) {
         fprintf(stderr, "can't open %s\n", output_path);
@@ -238,6 +276,7 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
         fwrite(mem, mem_size, 1, outfile);
     }
     fclose(outfile);
+    free(mem);
     
     /* Step 7: release JPEG compression object */
     jpeg_destroy_compress(&cinfo);
@@ -250,6 +289,7 @@ void RAW_createPreviewFile(ImageData data_holder, const char* output_path) {
     int err;
     libraw_processed_image_t *thumb = libraw_dcraw_make_mem_thumb(data_holder->raw_data, &err);
     write_prev(thumb, output_path);
+    libraw_dcraw_clear_mem(thumb);
 }
 
 void write_prev(libraw_processed_image_t *img, const char *output_path){

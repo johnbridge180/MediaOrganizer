@@ -33,7 +33,17 @@ MongoDBClientHolder new_MongoDBClientHolder(const char* uri_string, const char* 
     client_holder->client = client;
     client_holder->database = database;
     client_holder->db_name = db_name;
+    client_holder->files_collection=NULL;
+    client_holder->uploads_collection=NULL;
     return client_holder;
+}
+
+void freeDBClientHolder(MongoDBClientHolder holder) {
+    mongoc_collection_destroy(holder->files_collection);
+    mongoc_collection_destroy(holder->uploads_collection);
+    mongoc_database_destroy(holder->database);
+    mongoc_client_destroy(holder->client);
+    free(holder);
 }
 
 int createDefaultMongoDBCollections(MongoDBClientHolder dbclient_holder) {
@@ -42,7 +52,7 @@ int createDefaultMongoDBCollections(MongoDBClientHolder dbclient_holder) {
 int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* files_collection_name, const char* uploads_collection_name, const char* events_collection_name) {
     //Create events collection
     if(events_collection_name != NULL) {
-        struct _bson_error_t error1;
+        bson_error_t error1;
         
         //set options
         bson_t *opts = bson_new();
@@ -81,23 +91,23 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
         bool r;
         r = mongoc_database_write_command_with_opts (
               dbclient_holder->database, create_indexes, NULL /* opts */, &reply, &error);
-        
-        printf ("%s\n", bson_as_json(&reply, NULL));
+        char* json_reply = bson_as_json(&reply, NULL);
+        printf ("%s\n", json_reply);
         if(!r) {
             fprintf (stderr, "Error in createIndexes for events collection: %s\n", error.message);
         }
         
         //free memory
+        bson_free(json_reply);
         bson_destroy(&reply);
         bson_destroy(create_indexes);
         bson_free(opts);
         mongoc_collection_destroy(events_collection);
-        //bson_free(error1);
     }
     
     //Create uploads collection
     if(uploads_collection_name != NULL) {
-        struct _bson_error_t error1;
+        bson_error_t error1;
         
         //set options
         bson_t *opts = bson_new();
@@ -137,12 +147,14 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
         r = mongoc_database_write_command_with_opts (
               dbclient_holder->database, create_indexes, NULL /* opts */, &reply, &error);
         
-        printf ("%s\n", bson_as_json(&reply, NULL));
+        char* json_reply = bson_as_json(&reply, NULL);
+        printf ("%s\n", json_reply);
         if(!r) {
             fprintf (stderr, "Error in createIndexes for uploads collection: %s\n", error.message);
         }
         
         //free memory
+        bson_free(json_reply);
         bson_destroy(&reply);
         bson_destroy(create_indexes);
         bson_free(opts);
@@ -153,7 +165,7 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
     
     //Create files collection
     if(files_collection_name != NULL) {
-        struct _bson_error_t error1;
+        bson_error_t error1;
         
         //set options
         bson_t *opts = bson_new();
@@ -207,12 +219,14 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
         r = mongoc_database_write_command_with_opts (
               dbclient_holder->database, create_indexes, NULL /* opts */, &reply, &error);
         
-        printf ("%s\n", bson_as_json(&reply, NULL));
+        char* json_reply = bson_as_json(&reply, NULL);
+        printf ("%s\n", json_reply);
         if(!r) {
             fprintf (stderr, "Error in createIndexes for files collection: %s\n", error.message);
         }
         
         //free memory
+        bson_free(json_reply);
         bson_destroy(&reply);
         bson_destroy(create_indexes);
         bson_free(opts);
