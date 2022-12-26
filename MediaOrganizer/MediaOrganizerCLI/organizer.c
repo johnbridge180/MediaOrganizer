@@ -559,8 +559,9 @@ int generateThumbnailForMediaFile(Organizer organizer, MediaFile file) {
     //1 +1 for '\0'
     size_t prev_output_path_size = strlen(containing_folder)+strlen(name_noextension)+strlen(previews_data->prev_extension)+16;
     char prev_output_path[prev_output_path_size];
-    if(strcmp(previews_data->prev_extension, "ppm")) {
+    if(strcmp(previews_data->prev_extension, "ppm")==0) {
         free_ImageData(previews_data);
+        printf("No PPM thumb functionality yet\n");
         free(name_noextension);
         free(containing_folder);
         //NO PPM THUMB FUNC YET;
