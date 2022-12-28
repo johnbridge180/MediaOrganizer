@@ -482,17 +482,7 @@ int generatePreviewForMediaFile(Organizer organizer, MediaFile file) {
     //1 +1 for ending
     size_t prev_output_path_size = strlen(containing_folder)+strlen(name_noextension)+strlen(previews_data->prev_extension)+15;
     char prev_output_path[prev_output_path_size];
-    /*libraw_processed_image_t *prev = libraw_dcraw_make_mem_thumb(previews_data->raw_data, &err);
-    switch(prev->type) {
-        case LIBRAW_IMAGE_BITMAP:
-            sprintf(prev_extension,"p%cm",prev->colors==1?'g':'p');
-            break;
-        case LIBRAW_IMAGE_JPEG:
-            sprintf(prev_extension,"jpg");
-            break;
-        default:
-            return -5;
-    }*/
+
     snprintf(prev_output_path, prev_output_path_size, "%spreview/%s.prev.%s",containing_folder,name_noextension, previews_data->prev_extension);
     RAW_createPreviewFile(previews_data, prev_output_path);
     
@@ -516,7 +506,6 @@ int generatePreviewForMediaFile(Organizer organizer, MediaFile file) {
         bson_destroy(update);
     }
     
-    //TODO: grab and insert metadata into mongodb above ^^
     free(containing_folder);
     free(name_noextension);
     free_ImageData(previews_data);
@@ -589,8 +578,69 @@ int generateThumbnailForMediaFile(Organizer organizer, MediaFile file) {
         bson_destroy(query);
         bson_destroy(update);
     }
+    uploadExifData(organizer, file, previews_data);
     free(containing_folder);
     free(name_noextension);
     free_ImageData(previews_data);
+    return 0;
+}
+
+int uploadExifData(Organizer organizer, MediaFile file, ImageData image) {
+    if(image->params == NULL)
+        return -1;
+    bson_error_t error;
+    bson_t reply;
+    
+    char latref_string[2] = {image->params->latitude_ref,'\0'};
+    char longref_string[2] = {image->params->longitude_ref,'\0'};
+    char altref_string[2] = {image->params->altitude_ref, '\0'};
+    
+    bson_t *lat_doc = BCON_NEW("degrees",BCON_DOUBLE(image->params->latitude[0]),"minutes",BCON_DOUBLE(image->params->latitude[1]),"seconds",BCON_DOUBLE(image->params->latitude[2]));
+    
+    bson_t *long_doc = BCON_NEW("degrees",BCON_DOUBLE(image->params->longitude[0]),"minutes",BCON_DOUBLE(image->params->longitude[1]),"seconds",BCON_DOUBLE(image->params->longitude[2]));
+    
+    bson_t *gps_doc = BCON_NEW(
+                               "latitude",BCON_DOCUMENT(lat_doc),
+                               "latitude_ref",BCON_UTF8(latref_string),
+                               "longitude",BCON_DOCUMENT(long_doc),
+                               "longitude_ref",BCON_UTF8(longref_string),
+                               "altitude",BCON_DOUBLE(image->params->altitude),
+                               "altitude_ref",BCON_UTF8(altref_string));
+    bson_t *doc = BCON_NEW("make",BCON_UTF8(image->params->make),
+                           "model",BCON_UTF8(image->params->model),
+                           "shutter_speed",BCON_DOUBLE(image->params->shutter_speed),
+                           "lens",BCON_UTF8(image->params->lensname),
+                           "focal_length",BCON_DOUBLE(image->params->focal_length),
+                           "aperture",BCON_DOUBLE(image->params->aperture),
+                           "flip",BCON_INT32(image->params->flip),
+                           "gps_data",BCON_DOCUMENT(gps_doc));
+    
+    bson_t *query = BCON_NEW("_id",BCON_OID(&file->mongo_objectID));
+    bson_t *update = BCON_NEW("$set",
+                              "{",
+                              "exif_data",BCON_DOCUMENT(doc),
+                              "}");
+    if(!mongoc_collection_update_one(organizer->dbclient_holder->files_collection, query, update, NULL, &reply, &error)) {
+        fprintf (stderr, "%s\n", error.message);
+        bson_destroy(lat_doc);
+        bson_destroy(long_doc);
+        bson_destroy(gps_doc);
+        bson_destroy(doc);
+        bson_destroy(query);
+        bson_destroy(update);
+        return -2;
+    }
+    
+    char *str = bson_as_canonical_extended_json(&reply, NULL);
+    printf("%s\n", str);
+    bson_free(str);
+    
+    bson_destroy(lat_doc);
+    bson_destroy(long_doc);
+    bson_destroy(gps_doc);
+    bson_destroy(doc);
+    bson_destroy(query);
+    bson_destroy(update);
+    
     return 0;
 }

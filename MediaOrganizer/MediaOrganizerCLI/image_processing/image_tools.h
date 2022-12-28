@@ -44,8 +44,11 @@ struct ImageDataParams {
     
     //gps data
     float latitude[3];
+    char latitude_ref;
     float longitude[3];
+    char longitude_ref;
     float altitude;
+    char altitude_ref;
 };
 extern int RAW_setImageDataParams(ImageData data_holder);
 

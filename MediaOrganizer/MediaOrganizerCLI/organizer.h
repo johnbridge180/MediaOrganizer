@@ -98,4 +98,6 @@ extern void str_tolower(char* str);
 extern int generatePreviewForMediaFile(Organizer organizer, MediaFile file);
 extern int generateThumbnailForMediaFile(Organizer organizer, MediaFile file);
 
+extern int uploadExifData(Organizer organizer, MediaFile file, ImageData image);
+
 #endif /* organizer_h */
