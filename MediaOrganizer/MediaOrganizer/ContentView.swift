@@ -10,63 +10,88 @@ import CoreData
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
-
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
+    
+    @State var photo_size_slider_value: Double = 300.0
+    
+    @State var selected_tab: Int? = 1
+    
+    var mongo_holder: MongoClientHolder = MongoClientHolder()
+    
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some View {
         NavigationView {
             List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+                NavigationLink(tag: 1, selection: $selected_tab) {
+                    MediaThumbGridView(maxGridItemSize: $photo_size_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate)
+                } label: {
+                    if #available(iOS 14.0, *) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                    } else {
+                        Image(systemName: "photo.on.rectangle")
                     }
+                    Text("Photos")
                 }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                NavigationLink(tag: 2, selection: $selected_tab) {
+                    Text("Uploads")
+                } label: {
+                    Image(systemName: "sdcard")
+                    Text("Uploads")
+                }
+                NavigationLink(tag: 3, selection: $selected_tab) {
+                    Text("Events")
+                } label: {
+                    if #available(iOS 16.0, macOS 13.0, *) {
+                        Image(systemName: "figure.track.and.field")
+                    } else if #available(iOS 15.0, macOS 12.0, *) {
+                        Image(systemName: "person.2.crop.square.stack")
+                    } else {
+                        Image(systemName: "calendar")
                     }
+                    Text("Events")
                 }
             }
-            Text("Select an item")
+            .listStyle(.sidebar)
         }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+        .frame(minWidth: 400, minHeight: 200)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Slider(value: $photo_size_slider_value, in: 50.0...400.0) {
+                    
+                } minimumValueLabel: {
+                    Label {
+                        Text("-")
+                    } icon: {
+                        Image(systemName: "minus")
+                    }
+                } maximumValueLabel: {
+                    Label {
+                        Text("+")
+                    } icon: {
+                        Image(systemName: "plus")
+                    }
+                    
+                }
+                .focusable(false)
+                .frame(minWidth: 150.0)
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button(action: {
+                    NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+                }, label: {
+                    Label("Settings", systemImage: "gearshape")
+                })
+            }
+            ToolbarItem(placement: .navigation) {
+                Button(action: {
+                    NSApp.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil,from: nil)
+                }, label: {
+                    Label("Toggle Sidebar", systemImage: "sidebar.left")
+                })
             }
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
+        .onDisappear {
+            mongo_holder.close()
         }
     }
 }
@@ -80,6 +105,6 @@ private let itemFormatter: DateFormatter = {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        ContentView()
     }
 }
