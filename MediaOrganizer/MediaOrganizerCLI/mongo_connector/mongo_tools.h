@@ -8,7 +8,6 @@
 #ifndef mongo_tools_h
 #define mongo_tools_h
 
-//#include <mongoc.h>
 #include <stdio.h>
 #include <mongoc/mongoc.h>
 
@@ -20,6 +19,7 @@ struct MongoDBClientHolder {
     mongoc_collection_t *files_collection;
     mongoc_collection_t *uploads_collection;
 };
+extern void freeDBClientHolder(MongoDBClientHolder holder);
 
 extern MongoDBClientHolder new_MongoDBClientHolder(const char* uri_string, const char* db_name);
 

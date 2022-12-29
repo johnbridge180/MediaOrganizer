@@ -27,6 +27,7 @@
 #endif
 
 #include "mongo_tools.h"
+#include "image_tools.h"
 
 typedef struct Organizer *Organizer;
 typedef struct MediaFile *MediaFile;
@@ -34,15 +35,23 @@ typedef struct MediaFileDate *MediaFileDate;
 typedef struct Upload *Upload;
 typedef struct MediaFileListNode *MediaFileListNode;
 
+//path variables must not end in "/"
+
+//Organizer struct and functions
 struct Organizer {
-    //SOURCE_PATH MUST NOT END IN "/"
     char *source_path;
     DIR* source;
-    //DESTINATION_PATH MUST NOT END IN "/"
     char *destination_path;
     DIR* destination;
     MongoDBClientHolder dbclient_holder;
 };
+extern Organizer new_Organizer(char* source, char* destination, MongoDBClientHolder dbclient_holder);
+extern void free_Organizer(Organizer organizer);
+
+extern bool organize(Organizer organizer);
+extern bool organizeDir(Organizer organizer, char* dir_path);
+
+//MediaFile related structs and functions
 struct MediaFile {
     char *name;
     char *filepath;
@@ -52,40 +61,43 @@ struct MediaFile {
     off_t size;
     bson_oid_t mongo_objectID;
 };
+extern MediaFile new_MediaFile(char* name, char* sourceDirectory);
+extern void free_MediaFile(MediaFile file);
+
+extern bool MediaFile_setExtension(struct MediaFile *file);
+extern bool MediaFile_setMetadata(MediaFile file);
+extern bool MediaFile_setDestinationPath(Organizer organizer, MediaFile file);
+
 struct MediaFileDate {
-    char *month;
+    const char *month;
     char *day;
     char *year;
     __darwin_time_t unix_time;
 };
-/*struct Upload {
-    MediaFileListNode file_list;
-    off_t size;
-    bson_oid_t mongo_objectID;
-};*/
+
+extern MediaFileDate new_MediaFileDate(const char* month, char* day, char* year, __darwin_time_t unix_time);
+extern void free_MediaFileDate(MediaFileDate date);
+
 struct MediaFileListNode {
     MediaFile file;
     MediaFileListNode next;
 };
+extern MediaFileListNode new_MediaFileListNode(MediaFile value);
+extern void free_MediaFileListNode(MediaFileListNode node);
 
-extern char* getFileExtension(char* filepath);
+//Directory helper functions
 extern bool validateFolder(char* folder);
-extern DIR* openValidDir(char* path);
-extern bool organize(Organizer organizer);
-extern bool organizeDir(Organizer organizer, char* dir_path);
-extern bool createSubDirIfNotExist(DIR* dir, char* path);
-extern bool setDestinationPath(Organizer organizer, MediaFile file);
+extern bool createSubDirIfNotExist(const char* parent_folder_path, const char* path);
+
+//copyfile function accounting for macOS and Linux
 extern bool copyFile(char* source, char* destination);
 
+//string helper functions
 extern void str_tolower(char* str);
 
+extern int generatePreviewForMediaFile(Organizer organizer, MediaFile file);
+extern int generateThumbnailForMediaFile(Organizer organizer, MediaFile file);
 
-extern MediaFile new_MediaFile(char* name, char* sourceDirectory);
-extern bool MediaFile_setExtension(struct MediaFile *file);
-extern MediaFileDate new_MediaFileDate(char* month, char* day, char* year, __darwin_time_t unix_time);
-extern bool MediaFile_setMetadata(MediaFile file);
-extern MediaFileListNode new_MediaFileListNode(MediaFile value);
-
-extern Organizer new_Organizer(char* source, char* destination, MongoDBClientHolder dbclient_holder);
+extern int uploadExifData(Organizer organizer, MediaFile file, ImageData image);
 
 #endif /* organizer_h */
