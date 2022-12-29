@@ -6,8 +6,11 @@
 //
 
 import SwiftUI
+import CoreData
 
 struct MediaThumbGridView: View {
+    @Environment(\.managedObjectContext) private var moc
+    
     @AppStorage("api_endpoint_url") private var api_endpoint_url: String = ""
     
     var mongo_holder:MongoClientHolder
@@ -30,7 +33,11 @@ struct MediaThumbGridView: View {
             ScrollView {
                 LazyVGrid(columns: gridItems) {
                     ForEach(mediaVModel.items, id: \.self) { item in
-                        MediaThumbView(item,appDelegate: appDelegate)
+                        if let cache_row: PreviewCache = item.cache_row {
+                            MediaThumbView(item.item, appDelegate: appDelegate, entry: cache_row)
+                        } else {
+                            MediaThumbView(item.item, appDelegate: appDelegate)
+                        }
                     }
                 }
                 .padding(EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 5))
@@ -44,12 +51,15 @@ struct MediaThumbGridView: View {
                     }
                 }
                 .onChange(of: maxGridItemSize, perform: { newValue in
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        gridItems = gridItems(for: geometry.size.width)
+                    if(numberGridItems(for: geometry.size.width) != gridItems.count) {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            gridItems = gridItems(for: geometry.size.width)
+                        }
                     }
                 })
                 .onAppear {
                     Task {
+                        mediaVModel.linkMOC(moc)
                         mediaVModel.linkMongoClientHolder(mongo_holder)
                         do {
                             try await mediaVModel.fetchRows(start: 0)
@@ -57,17 +67,29 @@ struct MediaThumbGridView: View {
                             //TODO: error catching
                         }
                     }
-                    withAnimation {
+                    withAnimation(.easeOut(duration: 0.3)) {
                         gridItems = gridItems(for: geometry.size.width)
+                    }
+                }
+                .onDisappear {
+                    do {
+                        try PersistenceController.shared.container.viewContext.save()
+                    } catch {
+                        print("Error saving viewContext\n")
                     }
                 }
             }
         }
         .frame(minWidth: 600.0)
     }
+    
+    func numberGridItems(for width: CGFloat) -> Int {
+        return Int(width/maxGridItemSize)
+    }
+    
     func gridItems(for width: CGFloat) -> [GridItem] {
         var items: [GridItem] = []
-        for _ in 0..<Int(width/maxGridItemSize) {
+        for _ in 0..<numberGridItems(for: width) {
             items.append(GridItem(.flexible()))
         }
         return items

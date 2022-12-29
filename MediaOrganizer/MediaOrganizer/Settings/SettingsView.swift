@@ -13,9 +13,6 @@ struct SettingsView: View {
     
     var body: some View {
         ZStack {
-            if(colorScheme == .light) {
-                Rectangle().fill(.white)
-            }
             TabView {
                 GeneralSettingsView()
                     .tabItem {

@@ -28,7 +28,7 @@ struct MediaItemDetailView: View {
         GeometryReader { geometry in
             HStack {
                 VStack {
-                    //TODO: cache all images on disk before displaying (1. because NSImage eats up ridiculous amounts of RAM, 2. cache makes fetch faster in future)
+                    //TODO: cache images on disk before displaying (1. because NSImage eats up ridiculous amounts of RAM, 2. cache makes fetch faster in future)
                     Image(nsImage: preview)
                         .antialiased(true)
                         .resizable()
@@ -118,6 +118,6 @@ struct MediaItemDetailView: View {
 
 struct MediaItemDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        try? MediaItemDetailView(thumb: NSImage(), item: MediaItem(_id: BSONObjectID("634491ff273cfa9985098782"), time: Date(timeIntervalSince1970: 1661834242000), name: "IMG_4303.CR3", upload_id: BSONObjectID("634491ff273cfa9985098781"), size: 28410943, upload_complete: true))
+        try? MediaItemDetailView(thumb: NSImage(), item: MediaItem(_id: BSONObjectID("634491ff273cfa9985098782"), time: Date(timeIntervalSince1970: 1661834242000), name: "IMG_4303.CR3", upload_id: BSONObjectID("634491ff273cfa9985098781"), size: 28410943, upload_complete: true, exif_data: ExifData(flip: 0)))
     }
 }
