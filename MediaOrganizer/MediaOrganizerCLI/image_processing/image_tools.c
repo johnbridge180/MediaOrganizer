@@ -49,6 +49,8 @@ int RAW_setImageDataParams(ImageData data_holder) {
     ImageDataParams params = (ImageDataParams) malloc(sizeof(struct ImageDataParams));
     if(params==NULL)
         return -1;
+    params->height = data_holder->raw_data->sizes.iheight;
+    params->width = data_holder->raw_data->sizes.iwidth;
     params->flip = data_holder->raw_data->sizes.flip;
     
     //Record lens data
@@ -136,7 +138,7 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
     info.dct_method = JDCT_IFAST;
     info.dither_mode = JDITHER_ORDERED;
     info.scale_num = 1;
-    info.scale_denom = 4;
+    info.scale_denom = 8;
     info.two_pass_quantize = TRUE;
     
     jpeg_start_decompress(&info);
@@ -180,7 +182,7 @@ int RAW_createThumbFile(ImageData data_holder, const char* output_path) {
 
     jpeg_set_defaults(&cinfo);
 
-    jpeg_set_quality(&cinfo, 70, TRUE);
+    jpeg_set_quality(&cinfo, 90, TRUE);
     
     /* TRUE ensures that we will write a complete interchange-JPEG file.
      * Pass TRUE unless you are very sure of what you're doing.

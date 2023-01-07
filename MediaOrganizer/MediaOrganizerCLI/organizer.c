@@ -46,7 +46,7 @@ bool organizeDir(Organizer organizer, char* dir_path) {
     
     struct dirent *dp;
     while((dp = readdir(dir)) != NULL) {
-        if(strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0) {
+        if(strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0 && strcmp(dp->d_name, ".DS_Store") != 0) {
             //if dir, organize subdirectory
             DIR* o_dir = opendir(dp->d_name);
             if(o_dir != NULL) {
@@ -606,7 +606,9 @@ int uploadExifData(Organizer organizer, MediaFile file, ImageData image) {
                                "longitude_ref",BCON_UTF8(longref_string),
                                "altitude",BCON_DOUBLE(image->params->altitude),
                                "altitude_ref",BCON_UTF8(altref_string));
-    bson_t *doc = BCON_NEW("make",BCON_UTF8(image->params->make),
+    bson_t *doc = BCON_NEW("width",BCON_INT32(image->params->width),
+                           "height",BCON_INT32(image->params->height),
+                           "make",BCON_UTF8(image->params->make),
                            "model",BCON_UTF8(image->params->model),
                            "shutter_speed",BCON_DOUBLE(image->params->shutter_speed),
                            "lens",BCON_UTF8(image->params->lensname),

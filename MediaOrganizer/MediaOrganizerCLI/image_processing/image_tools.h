@@ -31,7 +31,11 @@ extern void free_ImageData(ImageData data);
 extern void free_processed_image(libraw_processed_image_t* image);
 
 struct ImageDataParams {
-    int flip;       //orientation of image
+    //image data
+    int flip;           //orientation of image
+    uint16_t width;
+    uint16_t height;
+    
     //lens data
     char *lensname;
     float focal_length;
