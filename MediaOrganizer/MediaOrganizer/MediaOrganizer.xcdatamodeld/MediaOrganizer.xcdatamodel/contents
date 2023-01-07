@@ -9,6 +9,8 @@
         <attribute name="thumb_cached" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="thumb_ext" optional="YES" attributeType="String"/>
         <attribute name="thumb_size" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="tiny_cached" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="tiny_size" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
     </entity>
     <fetchRequest name="GetCachedObjects" entity="PreviewCache" predicateString="thumb_cached == 1 OR preview_cached == 1"/>
 </model>

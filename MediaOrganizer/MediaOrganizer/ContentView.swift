@@ -11,6 +11,9 @@ import CoreData
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     
+    let min_slider_value: Double = 50.0
+    let max_slider_value: Double = 400.0
+    
     @State var photo_size_slider_value: Double = 300.0
     
     @State var selected_tab: Int? = 1
@@ -23,7 +26,7 @@ struct ContentView: View {
         NavigationView {
             List {
                 NavigationLink(tag: 1, selection: $selected_tab) {
-                    MediaThumbGridView(maxGridItemSize: $photo_size_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate)
+                    MediaThumbAsyncGrid(idealGridItemSize: $photo_size_slider_value, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: [:])
                 } label: {
                     if #available(iOS 14.0, *) {
                         Image(systemName: "photo.on.rectangle.angled")
@@ -33,7 +36,10 @@ struct ContentView: View {
                     Text("Photos")
                 }
                 NavigationLink(tag: 2, selection: $selected_tab) {
-                    Text("Uploads")
+                    UploadsView(idealGridItemSize: $photo_size_slider_value, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate)
+                        .onAppear {
+                            photo_size_slider_value=99.0
+                        }
                 } label: {
                     Image(systemName: "sdcard")
                     Text("Uploads")
@@ -56,7 +62,7 @@ struct ContentView: View {
         .frame(minWidth: 400, minHeight: 200)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Slider(value: $photo_size_slider_value, in: 50.0...400.0) {
+                Slider(value: $photo_size_slider_value, in: min_slider_value...max_slider_value) {
                     
                 } minimumValueLabel: {
                     Label {
