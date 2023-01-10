@@ -45,6 +45,7 @@ struct ImageDataParams {
     char *make;
     char *model;
     float shutter_speed;
+    float iso_speed;
     
     //gps data
     float latitude[3];

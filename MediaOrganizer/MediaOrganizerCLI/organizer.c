@@ -611,6 +611,7 @@ int uploadExifData(Organizer organizer, MediaFile file, ImageData image) {
                            "make",BCON_UTF8(image->params->make),
                            "model",BCON_UTF8(image->params->model),
                            "shutter_speed",BCON_DOUBLE(image->params->shutter_speed),
+                           "iso_speed", BCON_DOUBLE(image->params->iso_speed),
                            "lens",BCON_UTF8(image->params->lensname),
                            "focal_length",BCON_DOUBLE(image->params->focal_length),
                            "aperture",BCON_DOUBLE(image->params->aperture),

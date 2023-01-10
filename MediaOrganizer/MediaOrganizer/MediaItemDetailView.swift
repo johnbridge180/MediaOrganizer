@@ -10,114 +10,173 @@ import SwiftBSON
 
 struct MediaItemDetailView: View {
     
+    let dateFormatter: DateFormatter
     
-    @AppStorage("api_endpoint_url") private var api_endpoint_url: String = ""
+    @StateObject var detailVModel: MediaItemDetailViewModel
     
-    @State var preview_loader_observer: NSKeyValueObservation? = nil
-    
-    var item: MediaItem
-    @State var preview: NSImage
-    @State var progress: Double = 0.0
-    
-    init(thumb: NSImage, item: MediaItem) {
-        self.item=item
-        self._preview=State(initialValue: thumb)
+    init(_ item: MediaItem, initialThumb: CGImage? = nil, initialThumbOrientation: Image.Orientation = .up) {
+        self.dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .short
+        self._detailVModel=StateObject(wrappedValue: MediaItemDetailViewModel(item, initialThumb: initialThumb, initialThumbOrientation: initialThumbOrientation))
     }
     
     var body: some View {
         GeometryReader { geometry in
             HStack {
+                Spacer()
                 VStack {
-                    //TODO: cache images on disk before displaying (1. because NSImage eats up ridiculous amounts of RAM, 2. cache makes fetch faster in future)
-                    Image(nsImage: preview)
-                        .antialiased(true)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: geometry.size.width*(3.0/5), maxHeight: geometry.size.height)
-                        .onAppear {
-                            Task {
-                                guard let url = URL(string: api_endpoint_url+"?request=preview&oid="+(item._id.hex)) else {
-                                    print("Invalid URL for \(item.name)\n")
-                                    return
+                    HStack {
+                        VStack {
+                            //TODO: cache images on disk before displaying
+                            if let cgImage = detailVModel.cgImage {
+                                Image(cgImage, scale: 1.0, orientation: detailVModel.orientation, label: Text(detailVModel.item.name))
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxHeight: geometry.size.height)
+                            }
+                            HStack {
+                                if(detailVModel.downloadProgress<1.0) {
+                                    Text("Loading Image")
+                                    ProgressView(value: detailVModel.downloadProgress, total:1.0)
                                 }
-                                let task = URLSession.shared.dataTask(with: url) { data, response, error in
-                                    autoreleasepool {
-                                        self.preview = NSImage(data: data ?? Data()) ?? NSImage()
-                                    }
-                                }
-                                self.preview_loader_observer = task.progress.observe(\.fractionCompleted) { progress, _ in
-                                    self.progress=progress.fractionCompleted
-                                }
-                                task.resume()
                             }
                         }
-                    HStack {
-                        if(progress<1.0) {
-                            Text("Loading Image")
-                            ProgressView(value: progress, total:1.0)
+                        .onAppear {
+                            detailVModel.loadPreview()
                         }
-                    }
-                }
-                .fixedSize(horizontal: true, vertical: false)
-                //TODO: get text to line up properly
-                VStack {
-                    Text(item.name)
-                        .frame(maxWidth: .infinity,alignment: .center)
-                        .font(.system(size: 36, weight: .bold))
-                    HStack {
                         VStack {
-                            
-                        }
-                        .frame(maxWidth: .infinity)
-                        VStack {
-                            
                             HStack {
                                 VStack {
-                                    Text("Date: ")
-                                        .frame(maxWidth: .infinity, alignment: .topTrailing)
-                                    Text("File Size: ")
-                                        .frame(maxWidth: .infinity, alignment: .topTrailing)
+                                    Text("Date:")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                    Text("Size:")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                    Text("Dimensions:")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                    Text("Camera:")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                    Text("Shutter Speed:")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                    Text("Lens:")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                    Text("Focal Length:")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                    Text("Aperture:")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
                                 }
+                                .fixedSize()
                                 VStack {
-                                    if #available(macOS 12.0, *) {
-                                        Text("\(item.time?.formatted(date: .abbreviated, time: .shortened) ?? "err")")
-                                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                                        
-                                    } else {
-                                        // Fallback on earlier versions
-                                    }
-                                    Text("\((item.size)/1024/1024)MiB")
-                                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                                    Text(dateFormatter.string(from: detailVModel.item.time))
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text(Tools.getStringFromSize(detailVModel.item.size))
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text("\(detailVModel.item.exif_data.width)x\(detailVModel.item.exif_data.height)")
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text("\(detailVModel.item.exif_data.make) \(detailVModel.item.exif_data.model)")
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text("\(detailVModel.item.exif_data.shutter_speed)")
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text("\(detailVModel.item.exif_data.lens)")
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text(String(format: "%gmm", detailVModel.item.exif_data.focal_length)).lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text(String(format:"ƒ/%g",detailVModel.item.exif_data.aperture))
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
+                                .fixedSize()
+                            }
+                            .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 5))
+                    }
+                    HStack {
+                        Button() {
+                            detailVModel.downloadFile()
+                        } label: {
+                            if let download = detailVModel.activeDownload {
+                                DownloadButtonLabel(activeDownload: download, title: "Download")
+                            } else {
+                                Text("Download")
                             }
                         }
-                    }
-                    Spacer()
-                    HStack{
-                        Button("Download") {
-                            
+                        .background(VStack { if let activeDownload = detailVModel.activeDownload {
+                            DownloadButtonBackgroundView(activeDownload: activeDownload)
+                        } else {
+                            Color.clear
+                        }})
+                        Button() {
+                            detailVModel.exportPreview()
+                        } label: {
+                            if let download = detailVModel.activePreviewExport {
+                                DownloadButtonLabel(activeDownload: download, title: "Export Preview")
+                            } else {
+                                Text("Export Preview")
+                            }
                         }
-                        Button("Export Preview") {
-                            
-                        }
+                        .background(
+                            VStack { if let activeDownload = detailVModel.activePreviewExport {
+                                DownloadButtonBackgroundView(activeDownload: activeDownload)
+                            } else {
+                                Color.clear
+                            }})
                     }
-                    .frame(maxWidth: .infinity, alignment: .bottom)
-                    .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(maxWidth: .infinity, maxHeight: geometry.size.height, alignment: .topLeading)
-                .padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 0))
+                Spacer()
             }
         }
-        .padding(EdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5))
-        .onDisappear {
-            preview=NSImage()
+        .frame(minWidth: 500, minHeight: 300)
+        .padding(EdgeInsets(top: 5, leading: 5, bottom: 20, trailing: 5))
+    }
+}
+
+struct DownloadButtonBackgroundView: View {
+    @ObservedObject var activeDownload: DownloadModel
+    
+    var body: some View {
+        GeometryReader { geometry in
+            HStack {
+                Color.blue
+                    .frame(width: geometry.size.width*(activeDownload.progress))
+                Color.clear
+                    .frame(width: geometry.size.width*(1.0-(activeDownload.progress)))
+            }
+        }
+        .cornerRadius(5)
+    }
+}
+
+struct DownloadButtonLabel: View {
+    @ObservedObject var activeDownload: DownloadModel
+    let title: String
+    
+    var body: some View {
+        if activeDownload.completed {
+            Label(title, systemImage: "checkmark.circle.fill")
+        } else {
+            Text(title)
         }
     }
 }
 
-
 struct MediaItemDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        try? MediaItemDetailView(thumb: NSImage(), item: MediaItem(_id: BSONObjectID("634491ff273cfa9985098782"), time: Date(timeIntervalSince1970: 1661834242000), name: "IMG_4303.CR3", upload_id: BSONObjectID("634491ff273cfa9985098781"), size: 28410943, upload_complete: true, exif_data: ExifData(flip: 0)))
+        try? MediaItemDetailView(MediaItem(_id: BSONObjectID("634491ff273cfa9985098782"), time: Date(timeIntervalSince1970: 1661834242000), name: "IMG_4303.CR3", upload_id: BSONObjectID("634491ff273cfa9985098781"), size: 28410943, upload_complete: true, exif_data: ExifData(width: 1, height: 1, make: "Make", model: "Model", shutter_speed: 0.1, iso_speed: 100, lens: "LENS", focal_length: 0.1, aperture: 4.0)), initialThumb: nil)
+        EmptyView()
     }
 }

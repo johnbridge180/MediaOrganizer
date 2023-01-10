@@ -52,10 +52,9 @@ class ThumbViewModel: ObservableObject {
         if(type != self.type || cgImage==nil) {
             self.type=type
             if type==2, let url = cached_image_location {
-                let orientation: Image.Orientation = item.exif_data.flip==5 ? (Image.Orientation(rawValue: 1) ?? .up) : .up
-                setImage(from: url, with: orientation)
+                setImage(from: url)
             } else if type==1, let url = tinythumb_location {
-                setImage(from: url, with: .up)
+                setImage(from: url)
             } else {
                 DispatchQueue.main.async(qos: .background, execute: {
                     self.objectWillChange.send()
@@ -99,7 +98,7 @@ class ThumbViewModel: ObservableObject {
                                 try FileManager.default.moveItem(at: fileURL, to: savedURL)
                             }
                             if(self.type==2) {
-                                self.setImage(from: savedURL, with: .up)
+                                self.setImage(from: savedURL)
                             }
                             if let tiny_thumb: CGImage = self.createTinyThumbnail(savedURL) {
                                 let tinythumbURL = cacheURL.appendingPathComponent(self.item._id.hex+".tiny."+file_extension)
@@ -111,7 +110,7 @@ class ThumbViewModel: ObservableObject {
                                     cache_entry.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
                                     self.tinythumb_location=tinythumbURL
                                     if(self.type==1) {
-                                        self.setImage(from: tinythumbURL, with: .up)
+                                        self.setImage(from: tinythumbURL)
                                     }
                                 }
                             }
@@ -125,7 +124,7 @@ class ThumbViewModel: ObservableObject {
                                 try FileManager.default.moveItem(at: fileURL, to: savedURL)
                             }
                             if(self.type==2) {
-                                self.setImage(from: savedURL, with: .up)
+                                self.setImage(from: savedURL)
                             }
                             self.cache_row?.thumb_cached=true
                             self.cached_image_location=savedURL
@@ -136,7 +135,7 @@ class ThumbViewModel: ObservableObject {
                                 if let colorspace = ciimage.colorSpace ?? CGColorSpace(name: CGColorSpace.dcip3) {
                                     try cicontext.writeJPEGRepresentation(of: ciimage, to: tinythumbURL, colorSpace: colorspace)
                                     if(self.type==1) {
-                                        self.setImage(from: tinythumbURL, with: .up)
+                                        self.setImage(from: tinythumbURL)
                                     }
                                     self.cache_row?.tiny_cached = true
                                     self.cache_row?.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
@@ -144,6 +143,9 @@ class ThumbViewModel: ObservableObject {
                                 }
                             }
                             self.isCached=true
+                        }
+                        DispatchQueue.main.async {
+                            self.objectWillChange.send()
                         }
                     } catch {
                         print ("file error: \(error)")
@@ -177,20 +179,26 @@ class ThumbViewModel: ObservableObject {
         return downsampledImage
     }
     
-    func setImage(from url: URL, with orientation: Image.Orientation) {
-        //TODO: FIX ORIENTATION BY LOOKING AT TAG BYTES IN FILE current method is WRONG!
-        makeCGImageQueue.schedule {
-            if let dataProvider:CGDataProvider = CGDataProvider(url: url as CFURL) {
-                self.cgImage = CGImage(jpegDataProviderSource: dataProvider, decode: nil, shouldInterpolate: false, intent: .perceptual)
-                self.orientation=orientation
+    func setImage(from url: URL) {
+        makeCGImageQueue.async {
+            if let imageSource = CGImageSourceCreateWithURL(url as CFURL, nil) {
+                self.cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil)
+                let imageProperties = CGImageSourceCopyPropertiesAtIndex(imageSource,0,nil)
+                self.orientation = .up
+                if let propertiesDictionary = imageProperties as? [String: Any] {
+                    if let orientation_exifValue: UInt8 = propertiesDictionary["Orientation"] as? UInt8, let orientation=Tools.translateExifOrientationToImageOrientation(orientation_exifValue) {
+                        self.orientation=orientation
+                    }
+                }
                 if let cgImage = self.cgImage {
                     self.image_view = Image(cgImage, scale: 1, orientation: self.orientation, label: Text(self.item.name))
                         .resizable()
+                    self.cgImage=cgImage
                 }
                 DispatchQueue.main.async(qos: .userInteractive, execute: {
                     self.objectWillChange.send()
                 })
             }
-        }
+       }
     }
 }

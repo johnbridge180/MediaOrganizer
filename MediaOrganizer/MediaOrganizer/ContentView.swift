@@ -61,7 +61,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 400, minHeight: 200)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem {
                 Slider(value: $photo_size_slider_value, in: min_slider_value...max_slider_value) {
                     
                 } minimumValueLabel: {
@@ -81,7 +81,16 @@ struct ContentView: View {
                 .focusable(false)
                 .frame(minWidth: 150.0)
             }
-            ToolbarItem(placement: .confirmationAction) {
+            ToolbarItem {
+                Button {
+                    appDelegate.openDownloadsPanel()
+                } label: {
+                    VStack {
+                        Image(systemName: "arrow.down.circle")
+                    }
+                }
+            }
+            ToolbarItem {
                 Button(action: {
                     NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
                 }, label: {

@@ -106,7 +106,7 @@ class MediaItemsViewModel: ObservableObject {
         self.lastSeenZStackOrigin=zstack_origin_y
         if !self.isFetching, self.items.count>0 {
             let assumedIndexRange = self.getAssumedDisplayedIndexRange(zstack_origin_y: zstack_origin_y, height: height, numColumns: numColumns, colWidth: colWidth)
-            let tinythumbIndexRange = self.items.startIndex...self.items.endIndex
+            let tinythumbIndexRange = 0...self.items.count-1
             if colWidth>MediaItemsViewModel.lowresTriggerWidth {
                 let modifier = numColumns
                 let bigthumbLowerBound = assumedIndexRange.lowerBound-modifier

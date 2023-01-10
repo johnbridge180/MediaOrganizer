@@ -62,6 +62,7 @@ int RAW_setImageDataParams(ImageData data_holder) {
     params->make = data_holder->raw_data->idata.make;
     params->model = data_holder->raw_data->idata.model;
     params->shutter_speed = data_holder->raw_data->other.shutter;
+    params->iso_speed = data_holder->raw_data->other.iso_speed;
     
     //set latitude/longitude arrays
     for(int i=0;i<3;i++) {
