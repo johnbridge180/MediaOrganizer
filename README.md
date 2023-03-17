@@ -39,3 +39,8 @@
   * jpeglib
   * MongoDB (mongoc, mongo-swift driver)
   
+## Build Instructions
+ Client Program (MediaOrganizer) can be built with XCode after installing MongoSwift framework
+ 
+ Organizer (MediaOrganizerCLI) can also be built with XCode after installing LibRAW, jpeglib, and mongo-c-driver.
+  * Paths to library `include` and `lib` folders were hardcoded in the project.pbxproj header search paths. Make sure you update these paths for both the debug and release schemes. If you have installed the dependencies via Homebrew, they will either be located in `/opt/homebrew/Cellar` (ARM/M1), or in `/usr/local/` (Intel)
