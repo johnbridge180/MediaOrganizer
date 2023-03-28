@@ -3,6 +3,10 @@
  
  Program is intended to be used with the organizer script executed on a NAS server, and the macOS application run on a client device. The NAS server must have mongod installed and a webserver capable of serving PHP pages
 ## Current Features
+ #### Video Demonstration
+ [![YouTube video demonstrating the current state of the software. Includes demos of photo grid scrolling, viewing photo details, and downloading files](https://img.youtube.com/vi/M8PEt7qT1SI/0.jpg)](https://www.youtube.com/watch?v=M8PEt7qT1SI)
+ 
+ [This video](https://www.youtube.com/watch?v=M8PEt7qT1SI) demonstrates the current features of the Swift client program.
  ###### Organizer script
   * Copies files from source directory to a target directory where files are organized by date and file extension
   * Rips jpeg previews from LibRAW readable files and places them into a preview directory (/path/to/target/YEAR/MONTH/DAY/FILE_EXT/preview/FILENAME.prev.jpg)
