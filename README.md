@@ -41,10 +41,24 @@
   ###### Dependencies / acknowledged libraries
   * LibRAW
   * jpeglib
-  * MongoDB (mongoc, mongo-swift driver)
+  * MongoDB (mongoc, mongo-swift driver, mongo-php-driver)
   
 ## Build Instructions
  Client Program (MediaOrganizer) can be built with XCode after installing MongoSwift framework
  
  Organizer (MediaOrganizerCLI) can also be built with XCode after installing LibRAW, jpeglib, and mongo-c-driver.
   * Paths to library `include` and `lib` folders were hardcoded in the project.pbxproj header search paths. Make sure you update these paths for both the debug and release schemes. If you have installed the dependencies via Homebrew, they will either be located in `/opt/homebrew/Cellar` (ARM/M1), or in `/usr/local/` (Intel)
+## Running Notes
+  #### Running MediaOrganizerCLI
+  * In XCode, MediaOrganizerCLI can be run by adding 4 arguments to its scheme:
+    1. Source Directory: path to directory containing raw image files to be sorted
+    2. Destination Directory: path to directory in which to store organized filesystem
+    3. MongoDB uri
+    4. MongoDB database name
+  * If built and then run outside of XCode, run: `./MediaOrganizerCLI <source directory> <destination directory> <mongodb server url (ex. mongodb://localhost:27017)> <mongodb database name>`
+  #### Setting up PHP API endpoint
+  * Install PHP and a web server
+  * Install MongoDB PHP Driver: `sudo pecl install mongodb`
+  * Place request.php in public folder
+  #### Setting up MediaOrganizer client
+  * Click the gear icon or click MediaOrganizer->Preferences in the menu bar and set the mongodb and api request uri
