@@ -7,14 +7,15 @@
 
 import Foundation
 import SwiftUI
+import SwiftBSON
 
 class GridViewModel: ObservableObject {
     
     let minGridItemSize: Double
     
-    let mediaVModel: MediaItemsViewModel
+    var mediaVModel: MediaItemsViewModel
     
-    var offsets: [CGSize] = []
+    var offsets: [BSONObjectID:CGSize] = [:]
     var photo_width: CGFloat = 0.0
     var zstack_height: CGFloat = 0.0
     var numCols: Int = 0
@@ -27,19 +28,15 @@ class GridViewModel: ObservableObject {
     func setOffsets(width: CGFloat, idealGridItemSize: Double) {
         let numCols = self.getNumColumns(width: width, idealGridItemSize: idealGridItemSize)
         let photo_width = self.getColWidth(width: width, numCols: numCols)
-        if(numCols != 0 && (self.numCols != numCols || self.photo_width != photo_width)) {
+            self.offsets=[:]
             self.numCols = numCols
             self.photo_width = photo_width
-            for i in 0..<self.mediaVModel.items.count {
-                if(i==self.offsets.count) {
-                    self.offsets.append(self.getOffset(for: i, width: width, numCols: numCols, colWidth: photo_width))
-                } else {
-                    self.offsets[i] = self.getOffset(for: i, width: width, numCols: numCols, colWidth: photo_width)
-                }
+            for i in 0..<self.mediaVModel.item_order.count {
+                print("i: \(i)")
+                offsets[mediaVModel.item_order[i]]=self.getOffset(for: i, width: width, numCols: numCols, colWidth: photo_width)
             }
             self.zstack_height = photo_width*CGFloat(self.getNumRows(width: width, idealGridItemSize: idealGridItemSize, numCols: numCols))
             self.objectWillChange.send()
-        }
     }
     
     func getOffset(for index: Int, width: CGFloat, numCols: Int, colWidth: CGFloat) -> CGSize {
@@ -53,10 +50,10 @@ class GridViewModel: ObservableObject {
         return width/CGFloat(numCols)
     }
     func getNumRows(width: CGFloat, idealGridItemSize: Double, numCols: Int) -> Int {
-        if(mediaVModel.items.count==0 || width==0 || numCols==0) {
+        if(mediaVModel.item_order.count==0 || width==0 || numCols==0) {
             return 0
         }
-        return Int(ceil((Double(mediaVModel.items.count)/Double(numCols))))
+        return Int(ceil((Double(mediaVModel.item_order.count)/Double(numCols))))
     }
     func getNumColumns(width: CGFloat, idealGridItemSize: Double) -> Int {
         if(idealGridItemSize==0) {

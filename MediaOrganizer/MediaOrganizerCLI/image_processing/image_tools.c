@@ -56,7 +56,10 @@ int RAW_setImageDataParams(ImageData data_holder) {
     //Record lens data
     params->lensname = data_holder->raw_data->lens.Lens;
     params->focal_length = data_holder->raw_data->lens.makernotes.CurFocal;
-    params->aperture = data_holder->raw_data->lens.makernotes.CurAp;
+    //params->aperture = data_holder->params->aperture;
+    //data_holder->raw_data->
+    //params->aperture = data_holder->raw_data->lens.makernotes.CurAp;
+    params->aperture = data_holder->raw_data->other.aperture;
     
     //record camera data
     params->make = data_holder->raw_data->idata.make;

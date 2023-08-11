@@ -42,26 +42,27 @@ struct MediaThumbAsyncGrid: View {
                 Rectangle()
                     .frame(width: geometry.size.width, height: gridViewModel.zstack_height)
                     .opacity(0)
-                
-                ForEach(mediaVModel.items.indices, id: \.self) { i in
-                    if(i<gridViewModel.offsets.count) {
-                        mediaVModel.items[i].view
+                /*ForEach(gridViewModel.offsets.indices, id: \.self) { i in
+                    if(i<mediaVModel.item_order.count) {
+                        mediaVModel.items[mediaVModel.item_order[i]]?.view
                             .frame(width: gridViewModel.photo_width, height: gridViewModel.photo_width)
                             .offset(gridViewModel.offsets[i])
-                    }
+                    }*/
+                ForEach(mediaVModel.item_order, id: \.hex) { object in
+                    mediaVModel.items[object]?.view
+                        .frame(width: gridViewModel.photo_width, height: gridViewModel.photo_width)
+                        .offset(gridViewModel.offsets[object] ?? CGSize())
                 }
             }
             VStack {
                 if(scrollable) {
-                    ScrollView(.vertical) {
-                        if(!mediaVModel.isFetching) {
+                    ScrollView(.vertical,showsIndicators: true) {
                             grid
                                 .onFrameChange { (frame) in
                                     mediaVModel.onScrollFrameUpdate(frame, width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photo_width)
                                 }
-                        }
                     }
-                } else if(!mediaVModel.isFetching) {
+                } else /*if(!mediaVModel.isFetching)*/ {
                     grid
                 }
             }

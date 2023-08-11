@@ -17,8 +17,15 @@ struct DownloadOverlayView: View {
     var body: some View {
         ScrollView {
             VStack {
-                ForEach(downloadManager.downloads.reversed(), id: \.downloadTask.taskIdentifier) { download in
-                    DownloadItemView(download: download, downloadOverlayQueue: downloadOverlayQueue, appDelegate: appDelegate)
+                if(downloadManager.downloads.count>0) {
+                    ForEach(downloadManager.downloads.reversed(), id: \.downloadTask.taskIdentifier) { download in
+                        DownloadItemView(download: download, downloadOverlayQueue: downloadOverlayQueue, appDelegate: appDelegate)
+                    }
+                } else {
+                    Spacer()
+                    Text("Downloading files appear here after they are queued")
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             .padding(EdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 15))

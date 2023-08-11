@@ -43,6 +43,7 @@ void freeDBClientHolder(MongoDBClientHolder holder) {
     mongoc_collection_destroy(holder->uploads_collection);
     mongoc_database_destroy(holder->database);
     mongoc_client_destroy(holder->client);
+    mongoc_cleanup();
     free(holder);
 }
 
@@ -174,17 +175,15 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
         mongoc_collection_t *files_collection = mongoc_database_create_collection(dbclient_holder->database, files_collection_name, opts, &error1);
         
         //create indexes
-        bson_t timeextension_index_keys;
+        bson_t textattributes_index_keys;
         bson_t eventid_index_keys;
         bson_t uploadid_index_keys;
         
-        
-        bson_init(&timeextension_index_keys);
+        bson_init(&textattributes_index_keys);
         bson_init(&eventid_index_keys);
         bson_init(&uploadid_index_keys);
         
-        BSON_APPEND_INT32(&timeextension_index_keys, "time", -1);
-        BSON_APPEND_UTF8(&timeextension_index_keys, "extension", "text");
+        BSON_APPEND_UTF8(&textattributes_index_keys, "$**", "text");
         
         BSON_APPEND_INT32(&eventid_index_keys, "event_id", 1);
         
@@ -196,9 +195,9 @@ int createMongoDBCollections(MongoDBClientHolder dbclient_holder, const char* fi
                                           "[",
                                           "{",
                                           "key",
-                                          BCON_DOCUMENT(&timeextension_index_keys),
+                                          BCON_DOCUMENT(&textattributes_index_keys),
                                           "name",
-                                          BCON_UTF8("files_timeextension"),
+                                          BCON_UTF8("files_wildcardtext"),
                                           "}",
                                           "{",
                                           "key",

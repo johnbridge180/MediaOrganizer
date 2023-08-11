@@ -13,12 +13,24 @@ struct ContentView: View {
     
     let min_slider_value: Double = 50.0
     let max_slider_value: Double = 400.0
-    
     @State var photo_size_slider_value: Double = 300.0
     
     @State var selected_tab: Int? = 1
     
-    var mongo_holder: MongoClientHolder = MongoClientHolder()
+    var mongo_holder: MongoClientHolder
+    
+    var placement: ToolbarItemPlacement
+    
+    init() {
+        let mongo_holder = MongoClientHolder()
+        self.mongo_holder = mongo_holder
+        
+        if #available(macOS 13.0, *) {
+            self.placement = .destructiveAction
+        } else {
+            self.placement = .automatic
+        }
+    }
     
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -57,56 +69,70 @@ struct ContentView: View {
                     Text("Events")
                 }
             }
+            .toolbar {
+                ToolbarItemGroup(placement: .navigation) {
+                    Button(action: {
+                        NSApp.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil,from: nil)
+                    }, label: {
+                        Label("Toggle Sidebar", systemImage: "sidebar.left")
+                    })
+                }
+                ToolbarItemGroup(placement: .navigation) {
+                    HStack {
+                        Slider(value: $photo_size_slider_value, in: min_slider_value...max_slider_value) {
+                            
+                        } minimumValueLabel: {
+                            Label {
+                                Text("-")
+                            } icon: {
+                                Image(systemName: "minus")
+                            }
+                        } maximumValueLabel: {
+                            Label {
+                                Text("+")
+                            } icon: {
+                                Image(systemName: "plus")
+                            }
+                            
+                        }
+                        .focusable(false)
+                        .frame(minWidth: 150.0)
+                        
+                        Spacer()
+                    }
+                }
+            }
             .listStyle(.sidebar)
         }
         .frame(minWidth: 400, minHeight: 200)
+        .onDisappear {
+            mongo_holder.close()
+        }
         .toolbar {
-            ToolbarItem {
-                Slider(value: $photo_size_slider_value, in: min_slider_value...max_slider_value) {
-                    
-                } minimumValueLabel: {
-                    Label {
-                        Text("-")
-                    } icon: {
-                        Image(systemName: "minus")
-                    }
-                } maximumValueLabel: {
-                    Label {
-                        Text("+")
-                    } icon: {
-                        Image(systemName: "plus")
-                    }
-                    
-                }
-                .focusable(false)
-                .frame(minWidth: 150.0)
-            }
-            ToolbarItem {
+            ToolbarItemGroup {
                 Button {
                     appDelegate.openDownloadsPanel()
                 } label: {
                     VStack {
                         Image(systemName: "arrow.down.circle")
+                        //ProgressView(value: 0, total: 1.0)
+                        //.frame(height: 5)
                     }
                 }
+                if #available(macOS 13, *) {
+                    Button(action: {
+                        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                    }, label: {
+                        Label("Settings", systemImage: "gearshape")
+                    })
+                } else {
+                    Button(action: {
+                        NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+                    }, label: {
+                        Label("Settings", systemImage: "gearshape")
+                    })
+                }
             }
-            ToolbarItem {
-                Button(action: {
-                    NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-                }, label: {
-                    Label("Settings", systemImage: "gearshape")
-                })
-            }
-            ToolbarItem(placement: .navigation) {
-                Button(action: {
-                    NSApp.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil,from: nil)
-                }, label: {
-                    Label("Toggle Sidebar", systemImage: "sidebar.left")
-                })
-            }
-        }
-        .onDisappear {
-            mongo_holder.close()
         }
     }
 }

@@ -19,11 +19,11 @@ class MediaItemsViewModel: ObservableObject {
     let updateTypeQueue: DispatchQueue
     let makeCGImageQueue: DispatchQueue
     
-    
     @Published var isFetching:Bool = false
-    @Published var items:[MediaItemHolder] = []
+    @Published var item_order:[BSONObjectID] = []
+    @Published var items:[BSONObjectID:MediaItemHolder] = [:]
     
-    private var item_vModels:[ThumbViewModel] = []
+    private var item_vModels:[BSONObjectID:ThumbViewModel] = [:]
     
     private var lastScrollFrameUpdate: Date
     private var lastSeenZStackOrigin: CGFloat = 0.0
@@ -41,6 +41,7 @@ class MediaItemsViewModel: ObservableObject {
     
     @MainActor
     func fetchRows(limit: Int=0, filter: BSONDocument) async throws {
+        print("filter: \(filter)")
         isFetching=true
         if(mongo_holder.client==nil) {
             await mongo_holder.connect()
@@ -48,32 +49,56 @@ class MediaItemsViewModel: ObservableObject {
         let files_collection = mongo_holder.client!.db("media_organizer").collection("files")
         var options = FindOptions(sort: ["time":-1])
         if limit>0 {
-            options = FindOptions(limit: limit, sort: ["time":-1])
+            options = FindOptions(limit: limit, sort: ["time":-1,"_id":-1])
         }
-        var new_items: [MediaItemHolder] = []
+        var new_item_order: [BSONObjectID] = []
         for try await doc in try await files_collection.find(filter, options: options) {
             if let item: MediaItem = try? BSONDecoder().decode(MediaItem.self, from: doc) {
                 let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PreviewCache")
                 fetchRequest.fetchLimit=1
                 fetchRequest.predicate = NSPredicate(format: "oid_hex == %@", item._id.hex)
                 let cache_rows = try moc.fetch(fetchRequest)
-                self.item_vModels.append(ThumbViewModel(item, cache_row: (cache_rows.count>0 ? (cache_rows[0] as? PreviewCache) : nil), makeCGImageQueue: makeCGImageQueue))
-                let current_index = item_vModels.count-1
-                
-                new_items.append(MediaItemHolder(item: item, cache_row: (cache_rows.count>0 ? (cache_rows[0] as? PreviewCache) : nil), view: MediaThumbView(appDelegate: appDelegate, thumbVModel: self.item_vModels[current_index])))
+                if self.item_vModels[item._id] == nil || self.items[item._id] == nil {
+                    let cache_row = (cache_rows.count>0 ? (cache_rows[0] as? PreviewCache) : nil)
+                    let item_vModel = ThumbViewModel(item, cache_row: cache_row, makeCGImageQueue: makeCGImageQueue)
+                    self.item_vModels[item._id]=item_vModel
+                    self.items[item._id]=MediaItemHolder(item: item, cache_row: cache_row, view: MediaThumbView(appDelegate: appDelegate, thumbVModel: item_vModel))
+                }
+                new_item_order.append(item._id)
             }
         }
-        items.append(contentsOf: new_items)
+        var i=0
+        var j=0
+        while i<item_order.count, j<new_item_order.count, let cur_item = self.items[item_order[i]]?.item, let new_item=self.items[new_item_order[j]]?.item {
+            if cur_item.time>new_item.time {
+                item_order.remove(at: i)
+            } else if cur_item.time==new_item.time {
+                if cur_item._id==new_item._id {
+                    i+=1;j+=1
+                } else if let cur_item_hexval = UInt64(cur_item._id.hex, radix: 16), let new_item_hexval = UInt64(new_item._id.hex, radix: 16), cur_item_hexval>new_item_hexval {
+                    item_order.remove(at: i)
+                } else {
+                    //cur_item._id<new_item._id
+                    item_order.insert(new_item._id, at: i)
+                    i+=1;j+=1
+                }
+            } else {
+                //cur_item.time<new_item.time
+                item_order.insert(new_item._id, at: i)
+                i+=1;j+=1
+            }
+        }
+        if i<item_order.count {
+            item_order.removeSubrange(i...item_order.count-1)
+        } else if j<new_item_order.count {
+            item_order.append(contentsOf: new_item_order[j...new_item_order.count-1])
+        }
         isFetching=false
     }
     
-    func setStatus(for indexes: [Int], status: Int) {
-        for i in indexes {
-            if(i<item_vModels.count) {
-                if(item_vModels[i].getDisplayType() != status) {
-                    self.item_vModels[i].setDisplayType(status)
-                }
-            }
+    func setStatus(for objects: [BSONObjectID], status: Int) {
+        for object in objects {
+            self.item_vModels[object]?.setDisplayType(status)
         }
     }
     
@@ -104,20 +129,23 @@ class MediaItemsViewModel: ObservableObject {
             return
         }
         self.lastSeenZStackOrigin=zstack_origin_y
-        if !self.isFetching, self.items.count>0 {
+        if !self.isFetching, self.item_order.count>0 {
             let assumedIndexRange = self.getAssumedDisplayedIndexRange(zstack_origin_y: zstack_origin_y, height: height, numColumns: numColumns, colWidth: colWidth)
-            let tinythumbIndexRange = 0...self.items.count-1
             if colWidth>MediaItemsViewModel.lowresTriggerWidth {
                 let modifier = numColumns
                 let bigthumbLowerBound = assumedIndexRange.lowerBound-modifier
-                let bigthumbIndexRange = ((bigthumbLowerBound>0) ? bigthumbLowerBound : 0)...assumedIndexRange.upperBound+modifier
-                self.setStatus(for: Array(bigthumbIndexRange), status: 2)
-                let tinythumbIndexes = tinythumbIndexRange.filter { i in
-                    return !bigthumbIndexRange.contains(i)
+                var bigthumbIndexRange = ((bigthumbLowerBound>0) ? bigthumbLowerBound : 0)...assumedIndexRange.upperBound+modifier
+                bigthumbIndexRange=bigthumbIndexRange.clamped(to: 0...(item_order.count-1))
+                self.setStatus(for: Array(item_order[bigthumbIndexRange]), status: 2)
+                var tinyThumbOrder: [BSONObjectID] = []
+                for i in 0..<item_order.count {
+                    if !bigthumbIndexRange.contains(i) {
+                        tinyThumbOrder.append(item_order[i])
+                    }
                 }
-                self.setStatus(for: tinythumbIndexes, status: 1)
+                self.setStatus(for: tinyThumbOrder, status: 1)
             } else {
-                self.setStatus(for: Array(tinythumbIndexRange), status: 1)
+                self.setStatus(for: Array(item_order[0...self.item_order.count-1]), status: 1)
             }
         }
     }
