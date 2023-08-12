@@ -18,6 +18,7 @@ struct ContentView: View {
     @State var selected_tab: Int? = 1
     
     var mongo_holder: MongoClientHolder
+    /*@StateObject */var searchParser: SearchParser
     
     var placement: ToolbarItemPlacement
     
@@ -25,6 +26,7 @@ struct ContentView: View {
         let mongo_holder = MongoClientHolder()
         self.mongo_holder = mongo_holder
         
+        self.searchParser = SearchParser(mongo_holder: mongo_holder)
         if #available(macOS 13.0, *) {
             self.placement = .destructiveAction
         } else {
@@ -38,7 +40,7 @@ struct ContentView: View {
         NavigationView {
             List {
                 NavigationLink(tag: 1, selection: $selected_tab) {
-                    MediaThumbAsyncGrid(idealGridItemSize: $photo_size_slider_value, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: [:])
+                    MediaThumbAsyncGrid(idealGridItemSize: $photo_size_slider_value, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate, searchParser: searchParser)
                 } label: {
                     if #available(iOS 14.0, *) {
                         Image(systemName: "photo.on.rectangle.angled")
@@ -110,6 +112,9 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarItemGroup {
+                SearchbarView(searchParser//, queryText: ""
+                              /*$searchParser.searchHolder.currentSearch.queryString*/)
+                    .frame(minWidth: 100, idealWidth: 200, maxWidth: .infinity)
                 Button {
                     appDelegate.openDownloadsPanel()
                 } label: {
@@ -134,6 +139,11 @@ struct ContentView: View {
                 }
             }
         }
+    }
+    
+    func onSearchbarFocused() {
+        appDelegate.openSearchPanel(searchParser)
+        print("focused")
     }
 }
 

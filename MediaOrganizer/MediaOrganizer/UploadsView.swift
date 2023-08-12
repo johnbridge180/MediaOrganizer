@@ -23,7 +23,8 @@ struct UploadsView: View {
     
     @State var didLoadRows: Bool = false
     
-    init(idealGridItemSize: Binding<Double>, minGridItemSize: Double, mongo_holder: MongoClientHolder, appDelegate: AppDelegate) {
+    
+    init(idealGridItemSize: Binding<Double>, minGridItemSize: Double, mongo_holder: MongoClientHolder, appDelegate: AppDelegate/*, searchParser: SearchParser*/) {
         self.mongo_holder=mongo_holder
         self.minGridItemSize=minGridItemSize
         self._uploadsVModel = StateObject(wrappedValue: UploadsViewModel(mongo_holder: mongo_holder))
@@ -52,7 +53,7 @@ struct UploadsView: View {
                                     .fill(.separator)
                                     .frame(maxWidth: .infinity, maxHeight: 2)
                                     .padding(EdgeInsets(top: -5, leading: 15, bottom: 0, trailing: 0))
-                                MediaThumbAsyncGrid(idealGridItemSize: idealGridItemSize, minGridItemSize: minGridItemSize, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: ["upload_id":.objectID(upload._id)], limit: 40, scrollable: false)
+                                MediaThumbAsyncGrid(idealGridItemSize: idealGridItemSize, minGridItemSize: minGridItemSize, mongo_holder: mongo_holder, appDelegate: appDelegate, searchParser: SearchParser(["upload_id":.objectID(upload._id)], mongo_holder: MongoClientHolder()), limit: 40, scrollable: false)
                             }
                         }
                     }

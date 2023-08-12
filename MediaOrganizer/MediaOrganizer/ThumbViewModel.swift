@@ -195,9 +195,10 @@ class ThumbViewModel: ObservableObject {
                         .resizable()
                     self.cgImage=cgImage
                 }
-                DispatchQueue.main.async(qos: .userInteractive, execute: {
+                DispatchQueue.main.async {
                     self.objectWillChange.send()
-                })
+                    print("objectWillChange from ThumbViewModel")
+                }
             }
        }
     }

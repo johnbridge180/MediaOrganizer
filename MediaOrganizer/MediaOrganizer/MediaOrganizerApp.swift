@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var mediaItemDetailWindows: [MediaItemDetailWindow] = []
     
     var downloadsPanel: DownloadOverlayPanel? = nil
+    var searchPanel: SearchOverlayPanel? = nil
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         mediaItemDetailWindow.title=item.name
         mediaItemDetailWindow.contentView = NSHostingView(rootView: MediaItemDetailView(item, initialThumb: initialThumb, initialThumbOrientation: orientation))
         mediaItemDetailWindows.append(mediaItemDetailWindow)
+        //do sum w this? mediaItemDetailWindows[0].addTabbedWindow(<#T##window: NSWindow##NSWindow#>, ordered: <#T##NSWindow.OrderingMode#>)
     }
     
     func openDownloadsPanel() {
@@ -36,6 +38,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             self.downloadsPanel = DownloadOverlayPanel(contentRect: CGRect(x: window.frame.maxX-325, y: window.frame.maxY-(height+45), width: 300, height: height))
         }
         self.downloadsPanel?.present()
+    }
+    
+    func openSearchPanel(_ searchParser: SearchParser) {
+        if NSApp.windows.count>0 {
+            let window = NSApp.windows[0]
+            let height: CGFloat = 500
+            self.searchPanel = SearchOverlayPanel(searchParser, contentRect: CGRect(x: window.frame.maxX-375, y: window.frame.maxY-(height+45), width: 300, height: height))
+        }
+        self.searchPanel?.present()
+    }
+    func closeSearchPanel() {
+        self.searchPanel?.close()
     }
 }
 

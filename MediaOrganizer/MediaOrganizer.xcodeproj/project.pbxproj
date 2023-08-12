@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FC12DBA429707D54001C9275 /* SearchOverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC12DBA329707D54001C9275 /* SearchOverlayPanel.swift */; };
+		FC12DBA629707D6C001C9275 /* SearchOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC12DBA529707D6C001C9275 /* SearchOverlayView.swift */; };
 		FC39B91E29577D87003F3648 /* MongoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = FC39B91D29577D87003F3648 /* MongoSwift */; };
 		FC39B92029577FCA003F3648 /* MediaThumbView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B91F29577FCA003F3648 /* MediaThumbView.swift */; };
 		FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */; };
@@ -17,6 +19,7 @@
 		FC3CAC4A289B6C0B00C96BF0 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = FC3CAC49289B6C0B00C96BF0 /* main.c */; };
 		FC3CAC4F289B6C1D00C96BF0 /* organizer.c in Sources */ = {isa = PBXBuildFile; fileRef = FCC5FC31289B67E200617A0E /* organizer.c */; };
 		FC3CAC50289B71E500C96BF0 /* mongo_tools.c in Sources */ = {isa = PBXBuildFile; fileRef = FC4FC72F289B67FA006E419F /* mongo_tools.c */; };
+		FC3E2E82298092CB00150635 /* RangeSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC3E2E81298092CB00150635 /* RangeSliderView.swift */; };
 		FC455E432969F3ED0013E88E /* MediaItemDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC455E422969F3ED0013E88E /* MediaItemDetailViewModel.swift */; };
 		FC455E46296A0A4D0013E88E /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC455E45296A0A4D0013E88E /* Tools.swift */; };
 		FC455E48296A1B730013E88E /* MediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC455E47296A1B730013E88E /* MediaItem.swift */; };
@@ -32,7 +35,10 @@
 		FC78DEA82964AEA7009F3F27 /* View+onFrameChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */; };
 		FCD57DEA295A68700050C6F0 /* MediaItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */; };
 		FCDC4941295B725B00E2DDFE /* MediaItemDetailWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCDC4940295B725B00E2DDFE /* MediaItemDetailWindow.swift */; };
+		FCDEFAAF297A46B200998D9D /* DatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCDEFAAE297A46B200998D9D /* DatePickerView.swift */; };
 		FCF69761296BC7D600F2093D /* DownloadOverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */; };
+		FCF69763296D085500F2093D /* SearchbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF69762296D085500F2093D /* SearchbarView.swift */; };
+		FCF69765296D2B1F00F2093D /* SearchParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF69764296D2B1F00F2093D /* SearchParser.swift */; };
 		FCFA10AF28ACBC3B009A5A65 /* MediaOrganizerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCFA10AE28ACBC3B009A5A65 /* MediaOrganizerApp.swift */; };
 		FCFA10B128ACBC3B009A5A65 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCFA10B028ACBC3B009A5A65 /* ContentView.swift */; };
 		FCFA10B328ACBC3B009A5A65 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FCFA10B228ACBC3B009A5A65 /* Assets.xcassets */; };
@@ -74,6 +80,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FC12DBA329707D54001C9275 /* SearchOverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchOverlayPanel.swift; sourceTree = "<group>"; };
+		FC12DBA529707D6C001C9275 /* SearchOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchOverlayView.swift; sourceTree = "<group>"; };
 		FC39B91F29577FCA003F3648 /* MediaThumbView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaThumbView.swift; sourceTree = "<group>"; };
 		FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemsViewModel.swift; sourceTree = "<group>"; };
 		FC39B923295783C5003F3648 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -83,6 +91,7 @@
 		FC39B933295A244F003F3648 /* MongoClientHolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MongoClientHolder.swift; sourceTree = "<group>"; };
 		FC3CAC47289B6C0B00C96BF0 /* MediaOrganizerCLI */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MediaOrganizerCLI; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC3CAC49289B6C0B00C96BF0 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		FC3E2E81298092CB00150635 /* RangeSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RangeSliderView.swift; sourceTree = "<group>"; };
 		FC455E422969F3ED0013E88E /* MediaItemDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDetailViewModel.swift; sourceTree = "<group>"; };
 		FC455E45296A0A4D0013E88E /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		FC455E47296A1B730013E88E /* MediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItem.swift; sourceTree = "<group>"; };
@@ -103,7 +112,10 @@
 		FCC5FC31289B67E200617A0E /* organizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = organizer.c; sourceTree = "<group>"; };
 		FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDetailView.swift; sourceTree = "<group>"; };
 		FCDC4940295B725B00E2DDFE /* MediaItemDetailWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDetailWindow.swift; sourceTree = "<group>"; };
+		FCDEFAAE297A46B200998D9D /* DatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePickerView.swift; sourceTree = "<group>"; };
 		FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadOverlayPanel.swift; sourceTree = "<group>"; };
+		FCF69762296D085500F2093D /* SearchbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchbarView.swift; sourceTree = "<group>"; };
+		FCF69764296D2B1F00F2093D /* SearchParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchParser.swift; sourceTree = "<group>"; };
 		FCFA10AC28ACBC3B009A5A65 /* MediaOrganizer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MediaOrganizer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FCFA10AE28ACBC3B009A5A65 /* MediaOrganizerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaOrganizerApp.swift; sourceTree = "<group>"; };
 		FCFA10B028ACBC3B009A5A65 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -152,6 +164,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FC188A592A61F485003AA21C /* video_processing */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = video_processing;
+			sourceTree = "<group>";
+		};
 		FC39B92B2958F724003F3648 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -165,6 +184,7 @@
 		FC3CAC48289B6C0B00C96BF0 /* MediaOrganizerCLI */ = {
 			isa = PBXGroup;
 			children = (
+				FC188A592A61F485003AA21C /* video_processing */,
 				FC5DD5B3289EADC200456566 /* image_processing */,
 				FC4FC72D289B67FA006E419F /* mongo_connector */,
 				FCC5FC30289B67E200617A0E /* organizer.h */,
@@ -227,8 +247,11 @@
 				FCFA10B428ACBC3B009A5A65 /* Preview Content */,
 				FC39B92B2958F724003F3648 /* Settings */,
 				FCFA10B028ACBC3B009A5A65 /* ContentView.swift */,
+				FCF69762296D085500F2093D /* SearchbarView.swift */,
+				FCF69764296D2B1F00F2093D /* SearchParser.swift */,
 				FC39B91F29577FCA003F3648 /* MediaThumbView.swift */,
 				FC78100C2967CD1400C0D641 /* ThumbViewModel.swift */,
+				FC455E47296A1B730013E88E /* MediaItem.swift */,
 				FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */,
 				FC39B933295A244F003F3648 /* MongoClientHolder.swift */,
 				FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */,
@@ -240,10 +263,13 @@
 				FC78100E2967D93E00C0D641 /* GridViewModel.swift */,
 				FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */,
 				FC455E45296A0A4D0013E88E /* Tools.swift */,
-				FC455E47296A1B730013E88E /* MediaItem.swift */,
 				FC455E4B296A83A40013E88E /* DownloadModel.swift */,
 				FC455E49296A7EBE0013E88E /* DownloadOverlayView.swift */,
 				FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */,
+				FC12DBA329707D54001C9275 /* SearchOverlayPanel.swift */,
+				FC12DBA529707D6C001C9275 /* SearchOverlayView.swift */,
+				FCDEFAAE297A46B200998D9D /* DatePickerView.swift */,
+				FC3E2E81298092CB00150635 /* RangeSliderView.swift */,
 			);
 			path = MediaOrganizer;
 			sourceTree = "<group>";
@@ -448,21 +474,27 @@
 				FCDC4941295B725B00E2DDFE /* MediaItemDetailWindow.swift in Sources */,
 				FC455E432969F3ED0013E88E /* MediaItemDetailViewModel.swift in Sources */,
 				FC39B92F2958F828003F3648 /* ServerSettingsView.swift in Sources */,
+				FCDEFAAF297A46B200998D9D /* DatePickerView.swift in Sources */,
 				FC78DEA82964AEA7009F3F27 /* View+onFrameChange.swift in Sources */,
 				FC39B92D2958F758003F3648 /* GeneralSettingsView.swift in Sources */,
 				FC78100D2967CD1400C0D641 /* ThumbViewModel.swift in Sources */,
 				FCFA10B828ACBC3B009A5A65 /* Persistence.swift in Sources */,
 				FCD57DEA295A68700050C6F0 /* MediaItemDetailView.swift in Sources */,
+				FCF69765296D2B1F00F2093D /* SearchParser.swift in Sources */,
 				FC78DEA6295F44AF009F3F27 /* MediaThumbAsyncGrid.swift in Sources */,
+				FC12DBA629707D6C001C9275 /* SearchOverlayView.swift in Sources */,
 				FC39B92029577FCA003F3648 /* MediaThumbView.swift in Sources */,
 				FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */,
 				FC455E48296A1B730013E88E /* MediaItem.swift in Sources */,
 				FCFA10B128ACBC3B009A5A65 /* ContentView.swift in Sources */,
+				FCF69763296D085500F2093D /* SearchbarView.swift in Sources */,
 				FC39B934295A244F003F3648 /* MongoClientHolder.swift in Sources */,
 				FC455E4A296A7EBE0013E88E /* DownloadOverlayView.swift in Sources */,
 				FCFA10AF28ACBC3B009A5A65 /* MediaOrganizerApp.swift in Sources */,
 				FC455E4E296A8DE80013E88E /* DownloadManager.swift in Sources */,
+				FC3E2E82298092CB00150635 /* RangeSliderView.swift in Sources */,
 				FC78DEA2295E5395009F3F27 /* UploadsView.swift in Sources */,
+				FC12DBA429707D54001C9275 /* SearchOverlayPanel.swift in Sources */,
 				FCF69761296BC7D600F2093D /* DownloadOverlayPanel.swift in Sources */,
 				FC78100F2967D93E00C0D641 /* GridViewModel.swift in Sources */,
 				FC455E4C296A83A40013E88E /* DownloadModel.swift in Sources */,
@@ -511,14 +543,14 @@
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				HEADER_SEARCH_PATHS = (
 					"/opt/homebrew/Cellar/jpeg/9e/include/**",
-					"/opt/homebrew/Cellar/libraw/0.21.0/include/**",
+					"/opt/homebrew/Cellar/libraw/0.21.1/include/**",
 					"/opt/homebrew/Cellar/mongo-c-driver/1.23.1/include/**",
 					"/opt/homebrew/Cellar/libexif/0.6.24/include/**",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"/opt/homebrew/Cellar/jpeg/9e/lib/**",
 					"/opt/homebrew/Cellar/mongo-c-driver/1.23.1/lib/**",
-					"/opt/homebrew/Cellar/libraw/0.21.0/lib/**",
+					"/opt/homebrew/Cellar/libraw/0.21.1/lib/**",
 					"/opt/homebrew/Cellar/libexif/0.6.24/lib/**",
 				);
 				OTHER_CFLAGS = "";
@@ -530,6 +562,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
 			name = Debug;
 		};
@@ -541,14 +574,14 @@
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				HEADER_SEARCH_PATHS = (
 					"/opt/homebrew/Cellar/jpeg/9e/include/**",
-					"/opt/homebrew/Cellar/libraw/0.21.0/include/**",
+					"/opt/homebrew/Cellar/libraw/0.21.1/include/**",
 					"/opt/homebrew/Cellar/mongo-c-driver/1.23.1/include/**",
 					"/opt/homebrew/Cellar/libexif/0.6.24/include/**",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"/opt/homebrew/Cellar/jpeg/9e/lib/**",
 					"/opt/homebrew/Cellar/mongo-c-driver/1.23.1/lib/**",
-					"/opt/homebrew/Cellar/libraw/0.21.0/lib/**",
+					"/opt/homebrew/Cellar/libraw/0.21.1/lib/**",
 					"/opt/homebrew/Cellar/libexif/0.6.24/lib/**",
 				);
 				OTHER_CFLAGS = "";
@@ -687,10 +720,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = MediaOrganizer/MediaOrganizer.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MediaOrganizer/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -701,7 +736,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jbridge.MediaOrganizer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -723,10 +758,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = MediaOrganizer/MediaOrganizer.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"MediaOrganizer/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MediaOrganizer/Info.plist;
@@ -736,7 +773,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jbridge.MediaOrganizer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
