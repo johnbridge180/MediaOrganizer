@@ -43,7 +43,7 @@ struct MediaThumbView: View {
 
 struct MediaThumbView_Previews: PreviewProvider {
     static var previews: some View {
-        try? MediaThumbView(appDelegate: AppDelegate(), thumbVModel: ThumbViewModel(MediaItem(_id: BSONObjectID("634491ff273cfa9985098782"), time: Date(timeIntervalSince1970: 1661834242000), name: "IMG_4303.CR3", upload_id: BSONObjectID("634491ff273cfa9985098781"), size: 28410943, upload_complete: true, exif_data: ExifData(width: 1, height: 1, make: "Make", model: "Model", shutter_speed: 0.1, iso_speed: 100, lens: "LENS", focal_length: 0.1, aperture: 4.0)), cache_row: nil, makeCGImageQueue: DispatchQueue(label: "com.jbridge.makeCGImageQueue")))
+        try? MediaThumbView(appDelegate: AppDelegate(), thumbVModel: ThumbViewModel(MediaItem(_id: BSONObjectID("634491ff273cfa9985098782"), time: Date(timeIntervalSince1970: 1661834242000), name: "IMG_4303.CR3", upload_id: BSONObjectID("634491ff273cfa9985098781"), size: 28410943, upload_complete: true, exif_data: ExifData(width: 1, height: 1, make: "Make", model: "Model", shutter_speed: 0.1, iso_speed: 100, lens: "LENS", focal_length: 0.1, aperture: 4.0, flip: 0)), cache_row: nil, makeCGImageQueue: DispatchQueue(label: "com.jbridge.makeCGImageQueue")))
         EmptyView()
     }
 }

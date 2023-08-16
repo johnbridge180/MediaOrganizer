@@ -14,9 +14,10 @@ class DownloadModel: ObservableObject {
     let downloadTask: URLSessionDownloadTask
     
     let item: MediaItem
+    let time: Date
     var cache_row: PreviewCache? = nil
     
-    var progress: Double = 0.0
+    @Published var progress: Double = 0.0
     @Published var completed: Bool = false
     var disk_location: URL? = nil
     
@@ -25,9 +26,10 @@ class DownloadModel: ObservableObject {
     
     var name: String = ""
     
-    init(_ item: MediaItem, name: String, task: URLSessionDownloadTask, sizeEstimate: Int64 = 0) {
+    init(_ item: MediaItem, name: String, time: Date, task: URLSessionDownloadTask, sizeEstimate: Int64 = 0) {
         self.item=item
         self.name=name
+        self.time=time
         self.downloadTask=task
         self.totalBytes=sizeEstimate
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PreviewCache")
@@ -42,9 +44,9 @@ class DownloadModel: ObservableObject {
     }
     
     func setProgress(_ progress: Double, bytesWritten: Int64, totalBytes: Int64) {
+        self.totalBytes=totalBytes
+        self.bytesWritten=bytesWritten
         DispatchQueue.main.async {
-            self.bytesWritten=bytesWritten
-            self.totalBytes=totalBytes
             withAnimation {
                 self.progress=progress
             }

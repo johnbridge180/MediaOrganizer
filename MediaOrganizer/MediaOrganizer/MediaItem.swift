@@ -18,6 +18,7 @@ struct ExifData: Codable, Hashable {
     let lens: String
     let focal_length: Double
     let aperture: Double
+    let flip: Int
 }
 
 struct MediaItem: Codable, Hashable {
@@ -28,6 +29,13 @@ struct MediaItem: Codable, Hashable {
     let size: Int64
     let upload_complete: Bool
     let exif_data: ExifData
+    
+    func getDisplayDimensions() -> (width: Int, height: Int) {
+        if self.exif_data.flip >= 5 {
+            return (width: self.exif_data.height, height: self.exif_data.width)
+        }
+        return (width: self.exif_data.width, height: self.exif_data.height)
+    }
 }
 
 struct MediaItemHolder: Hashable, Identifiable {

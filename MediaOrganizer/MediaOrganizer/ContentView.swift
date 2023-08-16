@@ -17,6 +17,9 @@ struct ContentView: View {
     
     @State var selected_tab: Int? = 1
     
+    @State var multi_select: Bool = false
+    @StateObject var download_manager = DownloadManager.shared
+    
     var mongo_holder: MongoClientHolder
     
     var placement: ToolbarItemPlacement
@@ -38,7 +41,7 @@ struct ContentView: View {
         NavigationView {
             List {
                 NavigationLink(tag: 1, selection: $selected_tab) {
-                    MediaThumbAsyncGrid(idealGridItemSize: $photo_size_slider_value, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: [:])
+                    MediaThumbAsyncGrid(idealGridItemSize: $photo_size_slider_value, multi_select: $multi_select, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: [:])
                 } label: {
                     if #available(iOS 14.0, *) {
                         Image(systemName: "photo.on.rectangle.angled")
@@ -111,12 +114,20 @@ struct ContentView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
+                    multi_select.toggle()
+                } label: {
+                    Label("Select Multiple Photos", systemImage: multi_select ? "square.stack.3d.up.fill" : "square.stack.3d.up")
+                        .foregroundColor(multi_select ? Color.blue : Color.secondary)
+                }
+                Button {
                     appDelegate.openDownloadsPanel()
                 } label: {
                     VStack {
                         Image(systemName: "arrow.down.circle")
-                        //ProgressView(value: 0, total: 1.0)
-                        //.frame(height: 5)
+                        if(download_manager.active_downloads != 0) {
+                            ProgressView(value: (NSDecimalNumber(decimal: Decimal(self.download_manager.totalBytesWritten) / Decimal(self.download_manager.totalBytesExpected))).doubleValue, total: 1.0)
+                                .frame(height: 5)
+                        }
                     }
                 }
                 if #available(macOS 13, *) {

@@ -224,6 +224,7 @@
 				FCFA10B928ACBC3B009A5A65 /* MediaOrganizer.xcdatamodeld */,
 				FCFA10AE28ACBC3B009A5A65 /* MediaOrganizerApp.swift */,
 				FC455E4D296A8DE80013E88E /* DownloadManager.swift */,
+				FC455E4B296A83A40013E88E /* DownloadModel.swift */,
 				FCFA10B428ACBC3B009A5A65 /* Preview Content */,
 				FC39B92B2958F724003F3648 /* Settings */,
 				FCFA10B028ACBC3B009A5A65 /* ContentView.swift */,
@@ -241,7 +242,6 @@
 				FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */,
 				FC455E45296A0A4D0013E88E /* Tools.swift */,
 				FC455E47296A1B730013E88E /* MediaItem.swift */,
-				FC455E4B296A83A40013E88E /* DownloadModel.swift */,
 				FC455E49296A7EBE0013E88E /* DownloadOverlayView.swift */,
 				FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */,
 			);

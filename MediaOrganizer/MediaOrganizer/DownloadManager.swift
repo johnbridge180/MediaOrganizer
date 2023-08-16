@@ -15,7 +15,12 @@ class DownloadManager: NSObject, ObservableObject, URLSessionDelegate, URLSessio
     
     @Published var downloads: [DownloadModel] = []
     
-    private var downloadsDictionary: [URLSessionTask:DownloadModel] = [:]
+    var downloadsDictionary: [Int:DownloadModel] = [:]
+    
+    @Published var active_downloads: Int = 0
+    
+    @Published var totalBytesExpected: Int64 = 0
+    @Published var totalBytesWritten: Int64 = 0
     
     private var operationQueue: OperationQueue = OperationQueue()
     private var urlSession: URLSession!
@@ -28,6 +33,10 @@ class DownloadManager: NSObject, ObservableObject, URLSessionDelegate, URLSessio
     }
     
     func download(_ item: MediaItem, preview: Bool = false) -> DownloadModel? {
+        if self.active_downloads == 0, let last = downloads.last, last.completed, last.time.timeIntervalSince1970+5.0 < Date().timeIntervalSince1970 {
+            self.totalBytesWritten=0
+            self.totalBytesExpected=0
+        }
         do {
             let downloadsURL = try
             FileManager.default.url(for: .downloadsDirectory,
@@ -38,10 +47,13 @@ class DownloadManager: NSObject, ObservableObject, URLSessionDelegate, URLSessio
             let savedURL = downloadsURL.appendingPathComponent(fileName)
             let request = preview ? "preview" : "download"
             if let url = URL(string: api_endpoint_url+"?request=\(request)&oid="+item._id.hex) {
+                DispatchQueue.main.async {
+                    self.active_downloads += 1
+                }
                 let task = urlSession.downloadTask(with: url)
-                let download = DownloadModel(item, name: fileName, task: task)
+                let download = DownloadModel(item, name: fileName, time: Date(), task: task)
                 download.disk_location=savedURL
-                downloadsDictionary[task] = download
+                downloadsDictionary[task.taskIdentifier] = download
                 downloads.append(download)
                 task.resume()
                 return download
@@ -55,7 +67,7 @@ class DownloadManager: NSObject, ObservableObject, URLSessionDelegate, URLSessio
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         do {
             if(FileManager.default.fileExists(atPath: location.path)) {
-                if let disk_location = downloadsDictionary[downloadTask]?.disk_location {
+                if let disk_location = downloadsDictionary[downloadTask.taskIdentifier]?.disk_location {
                     print("\(disk_location.path)")
                     try FileManager.default.moveItem(at: location, to: disk_location)
                 }
@@ -65,11 +77,34 @@ class DownloadManager: NSObject, ObservableObject, URLSessionDelegate, URLSessio
         } catch {
             
         }
-        downloadsDictionary[downloadTask]?.setCompleted()
+        if let model = downloadsDictionary[downloadTask.taskIdentifier] {
+            DispatchQueue.main.async {
+                self.totalBytesWritten += downloadTask.countOfBytesReceived - model.bytesWritten
+                print("self.totalBytesWritten: \(self.totalBytesWritten); self.totalBytesExpected: \(self.totalBytesExpected)")
+            }
+        }
+        downloadsDictionary[downloadTask.taskIdentifier]?.setCompleted()
+        DispatchQueue.main.async {
+            self.active_downloads -= 1
+        }
     }
     
-    func urlSession(_: URLSession, downloadTask: URLSessionDownloadTask, didWriteData _: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        downloadsDictionary[downloadTask]?.setProgress(downloadTask.progress.fractionCompleted, bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite)
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+        //CRASHING ON MANY ITEM DOWNLOADS???
+        if let model = downloadsDictionary[downloadTask.taskIdentifier] {
+            //appears to not be thread-safe? self.totalBytesExpected often larger than expected to be
+            if model.totalBytes == 0 {
+                DispatchQueue.main.async {
+                    self.totalBytesExpected += totalBytesExpectedToWrite
+                }
+            }
+            let bytesNewlyWritten = totalBytesWritten - model.bytesWritten
+            DispatchQueue.main.async {
+                self.totalBytesWritten += bytesNewlyWritten
+                self.objectWillChange.send()
+            }
+            model.setProgress(downloadTask.progress.fractionCompleted, bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite)
+        }
     }
     
     func urlSession(_: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
