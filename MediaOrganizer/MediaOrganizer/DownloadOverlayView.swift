@@ -18,7 +18,7 @@ struct DownloadOverlayView: View {
         ScrollView {
             VStack {
                 if(downloadManager.downloads.count>0) {
-                    ForEach(downloadManager.downloads.reversed(), id: \.downloadTask.taskIdentifier) { download in
+                    ForEach(downloadManager.downloads.reversed(), id: \.destination) { download in
                         DownloadItemView(download: download, downloadOverlayQueue: downloadOverlayQueue, appDelegate: appDelegate)
                     }
                 } else {
@@ -36,13 +36,14 @@ struct DownloadOverlayView: View {
 }
 
 struct DownloadItemView: View {
+    //TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
     @ObservedObject var download: DownloadModel
     let downloadOverlayQueue: DispatchQueue
     let appDelegate: AppDelegate
     
     var body: some View {
         HStack {
-            let thumbViewModel = ThumbViewModel(download.item, cache_row: download.cache_row, makeCGImageQueue: downloadOverlayQueue)
+            let thumbViewModel = ThumbViewModel(download.item, makeCGImageQueue: downloadOverlayQueue)
             let thumbView = MediaThumbView(appDelegate: appDelegate, thumbVModel: thumbViewModel)
             thumbView
                 .frame(maxWidth: 75, maxHeight: 75)
@@ -63,9 +64,7 @@ struct DownloadItemView: View {
             if download.completed {
                 Spacer()
                 Button {
-                    if let disk_location = download.disk_location {
-                        NSWorkspace.shared.activateFileViewerSelecting([disk_location])
-                    }
+                    NSWorkspace.shared.activateFileViewerSelecting([download.destination])
                 } label: {
                     Label("Find", systemImage: "magnifyingglass.circle.fill")
                         .labelStyle(.iconOnly)

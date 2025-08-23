@@ -24,6 +24,7 @@
 		FC455E4C296A83A40013E88E /* DownloadModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC455E4B296A83A40013E88E /* DownloadModel.swift */; };
 		FC455E4E296A8DE80013E88E /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC455E4D296A8DE80013E88E /* DownloadManager.swift */; };
 		FC5DD5B6289EADE400456566 /* image_tools.c in Sources */ = {isa = PBXBuildFile; fileRef = FC5DD5B5289EADE400456566 /* image_tools.c */; };
+		FC673FD32E5A575800CC2113 /* DownloadOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC673FD22E5A575800CC2113 /* DownloadOperation.swift */; };
 		FC78100D2967CD1400C0D641 /* ThumbViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100C2967CD1400C0D641 /* ThumbViewModel.swift */; };
 		FC78100F2967D93E00C0D641 /* GridViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100E2967D93E00C0D641 /* GridViewModel.swift */; };
 		FC78DEA2295E5395009F3F27 /* UploadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA1295E5395009F3F27 /* UploadsView.swift */; };
@@ -93,6 +94,7 @@
 		FC4FC72F289B67FA006E419F /* mongo_tools.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mongo_tools.c; sourceTree = "<group>"; };
 		FC5DD5B4289EADE400456566 /* image_tools.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = image_tools.h; sourceTree = "<group>"; };
 		FC5DD5B5289EADE400456566 /* image_tools.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = image_tools.c; sourceTree = "<group>"; };
+		FC673FD22E5A575800CC2113 /* DownloadOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadOperation.swift; sourceTree = "<group>"; };
 		FC78100C2967CD1400C0D641 /* ThumbViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbViewModel.swift; sourceTree = "<group>"; };
 		FC78100E2967D93E00C0D641 /* GridViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridViewModel.swift; sourceTree = "<group>"; };
 		FC78DEA1295E5395009F3F27 /* UploadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadsView.swift; sourceTree = "<group>"; };
@@ -244,6 +246,7 @@
 				FC455E47296A1B730013E88E /* MediaItem.swift */,
 				FC455E49296A7EBE0013E88E /* DownloadOverlayView.swift */,
 				FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */,
+				FC673FD22E5A575800CC2113 /* DownloadOperation.swift */,
 			);
 			path = MediaOrganizer;
 			sourceTree = "<group>";
@@ -443,6 +446,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FC78DEA4295E546B009F3F27 /* UploadsViewModel.swift in Sources */,
+				FC673FD32E5A575800CC2113 /* DownloadOperation.swift in Sources */,
 				FCFA10BB28ACBC3B009A5A65 /* MediaOrganizer.xcdatamodeld in Sources */,
 				FC39B924295783C5003F3648 /* SettingsView.swift in Sources */,
 				FCDC4941295B725B00E2DDFE /* MediaItemDetailWindow.swift in Sources */,
