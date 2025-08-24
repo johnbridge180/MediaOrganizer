@@ -515,14 +515,14 @@
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				HEADER_SEARCH_PATHS = (
 					"/opt/homebrew/Cellar/jpeg/9e/include/**",
-					"/opt/homebrew/Cellar/libraw/0.21.0/include/**",
-					"/opt/homebrew/Cellar/mongo-c-driver/1.23.1/include/**",
+					"/opt/homebrew/Cellar/libraw/0.21.1/include/**",
+					"/opt/homebrew/Cellar/mongo-c-driver/1.23.4/include/**",
 					"/opt/homebrew/Cellar/libexif/0.6.24/include/**",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"/opt/homebrew/Cellar/jpeg/9e/lib/**",
-					"/opt/homebrew/Cellar/mongo-c-driver/1.23.1/lib/**",
-					"/opt/homebrew/Cellar/libraw/0.21.0/lib/**",
+					"/opt/homebrew/Cellar/mongo-c-driver/1.23.4/lib/**",
+					"/opt/homebrew/Cellar/libraw/0.21.1/lib/**",
 					"/opt/homebrew/Cellar/libexif/0.6.24/lib/**",
 				);
 				OTHER_CFLAGS = "";
@@ -545,14 +545,14 @@
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				HEADER_SEARCH_PATHS = (
 					"/opt/homebrew/Cellar/jpeg/9e/include/**",
-					"/opt/homebrew/Cellar/libraw/0.21.0/include/**",
-					"/opt/homebrew/Cellar/mongo-c-driver/1.23.1/include/**",
+					"/opt/homebrew/Cellar/libraw/0.21.1/include/**",
+					"/opt/homebrew/Cellar/mongo-c-driver/1.23.4/include/**",
 					"/opt/homebrew/Cellar/libexif/0.6.24/include/**",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"/opt/homebrew/Cellar/jpeg/9e/lib/**",
-					"/opt/homebrew/Cellar/mongo-c-driver/1.23.1/lib/**",
-					"/opt/homebrew/Cellar/libraw/0.21.0/lib/**",
+					"/opt/homebrew/Cellar/mongo-c-driver/1.23.4/lib/**",
+					"/opt/homebrew/Cellar/libraw/0.21.1/lib/**",
 					"/opt/homebrew/Cellar/libexif/0.6.24/lib/**",
 				);
 				OTHER_CFLAGS = "";
