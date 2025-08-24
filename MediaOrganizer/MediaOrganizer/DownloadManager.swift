@@ -17,11 +17,6 @@ class DownloadManager: NSObject, ObservableObject, URLSessionDelegate, URLSessio
     
     var downloadsDictionary: [String:DownloadModel] = [:]
     
-    @Published var active_downloads: Int = 0
-    
-    //out of 100%
-    @Published var progress: Int = 0
-    
     private var operationQueue: OperationQueue = OperationQueue()
     private var delegateQueue: OperationQueue = OperationQueue()
     private var updateProgressQueue: OperationQueue = OperationQueue()
