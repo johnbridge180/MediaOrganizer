@@ -146,6 +146,7 @@ struct MediaItemDetailView: View {
 }
 
 struct DownloadButtonBackgroundView: View {
+    //TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
     @ObservedObject var activeDownload: DownloadModel
     
     var body: some View {
@@ -162,6 +163,7 @@ struct DownloadButtonBackgroundView: View {
 }
 
 struct DownloadButtonLabel: View {
+    //TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
     @ObservedObject var activeDownload: DownloadModel
     let title: String
     

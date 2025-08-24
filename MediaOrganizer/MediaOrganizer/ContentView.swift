@@ -14,10 +14,12 @@ struct ContentView: View {
     let min_slider_value: Double = 50.0
     let max_slider_value: Double = 400.0
     @State var photo_size_slider_value: Double = 300.0
+    @State var slider_disabled: Bool = false
     
     @State var selected_tab: Int? = 1
     
     @State var multi_select: Bool = false
+    
     @StateObject var download_manager = DownloadManager.shared
     
     var mongo_holder: MongoClientHolder
@@ -42,6 +44,9 @@ struct ContentView: View {
             List {
                 NavigationLink(tag: 1, selection: $selected_tab) {
                     MediaThumbAsyncGrid(idealGridItemSize: $photo_size_slider_value, multi_select: $multi_select, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: [:])
+                        .onAppear {
+                            slider_disabled=false
+                        }
                 } label: {
                     if #available(iOS 14.0, *) {
                         Image(systemName: "photo.on.rectangle.angled")
@@ -51,9 +56,10 @@ struct ContentView: View {
                     Text("Photos")
                 }
                 NavigationLink(tag: 2, selection: $selected_tab) {
-                    UploadsView(idealGridItemSize: $photo_size_slider_value, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate)
+                    UploadsView(idealGridItemSize: $photo_size_slider_value, slider_disabled: $slider_disabled, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate)
                         .onAppear {
                             photo_size_slider_value=99.0
+                            slider_disabled=true
                         }
                 } label: {
                     Image(systemName: "sdcard")
@@ -100,6 +106,7 @@ struct ContentView: View {
                         }
                         .focusable(false)
                         .frame(minWidth: 150.0)
+                        .disabled(slider_disabled)
                         
                         Spacer()
                     }
@@ -122,13 +129,7 @@ struct ContentView: View {
                 Button {
                     appDelegate.openDownloadsPanel()
                 } label: {
-                    VStack {
-                        Image(systemName: "arrow.down.circle")
-                        if(download_manager.active_downloads != 0) {
-                            ProgressView(value: (NSDecimalNumber(decimal: Decimal(self.download_manager.totalBytesWritten) / Decimal(self.download_manager.totalBytesExpected))).doubleValue, total: 1.0)
-                                .frame(height: 5)
-                        }
-                    }
+                    Image(systemName: "arrow.down.circle")
                 }
                 if #available(macOS 13, *) {
                     Button(action: {

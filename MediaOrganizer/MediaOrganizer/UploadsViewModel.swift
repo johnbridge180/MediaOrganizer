@@ -23,6 +23,8 @@ class UploadsViewModel: ObservableObject {
     @Published var isFetching: Bool = false
     @Published var uploads: [Upload] = []
     
+    var upload_counts: [BSONObjectID:Int] = [:]
+    
     init(mongo_holder: MongoClientHolder) {
         self.mongo_holder=mongo_holder
     }
@@ -38,6 +40,8 @@ class UploadsViewModel: ObservableObject {
         for try await doc in try await uploads_collection.find([:], options: options) {
             if let upload: Upload = try? BSONDecoder().decode(Upload.self, from: doc) {
                 uploads.append(upload)
+                let upload_count = try await mongo_holder.client!.db("media_organizer").collection("files").countDocuments(["upload_id":BSON.objectID(upload._id)])
+                upload_counts[upload._id] = upload_count
             }
         }
         isFetching=false

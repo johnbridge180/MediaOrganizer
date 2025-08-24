@@ -35,16 +35,26 @@ class ThumbViewModel: ObservableObject {
             self.isCached=row.thumb_cached
             checkedCache=true
             do {
-                let cacheURL = try
-                FileManager.default.url(for: .cachesDirectory,
-                                        in: .userDomainMask,
-                                        appropriateFor: nil,
-                                        create: true)
+                let cacheURL = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
                 cached_image_location=cacheURL.appendingPathComponent(self.item._id.hex+".thumb."+(row.thumb_ext ?? "jpg"))
                 tinythumb_location=cacheURL.appendingPathComponent(item._id.hex+".tiny."+(row.thumb_ext ?? "jpg"))
             } catch {}
         } else {
             isCached=false
+        }
+    }
+    
+    convenience init(_ item: MediaItem, makeCGImageQueue: DispatchQueue) {
+        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PreviewCache")
+        fetchRequest.fetchLimit=1
+        fetchRequest.predicate = NSPredicate(format: "oid_hex == %@", item._id.hex)
+        do {
+            let cache_rows = try PersistenceController.shared.container.viewContext.fetch(fetchRequest)
+            let cache_row = cache_rows.count>0 ? (cache_rows[0] as? PreviewCache) : nil
+            self.init(item, cache_row: cache_row, makeCGImageQueue: makeCGImageQueue)
+        } catch {
+            print("Error in ThumbViewModel: \(error)")
+            self.init(item, cache_row: nil, makeCGImageQueue: makeCGImageQueue)
         }
     }
     

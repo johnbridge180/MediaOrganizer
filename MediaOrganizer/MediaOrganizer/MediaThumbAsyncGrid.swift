@@ -20,6 +20,7 @@ struct MediaThumbAsyncGrid: View {
     @Binding var multi_select: Bool
     let minGridItemSize: Double
     let scrollable: Bool
+    let horizontalScroll: Bool
     let limit: Int
     let filter: BSONDocument
     
@@ -32,7 +33,7 @@ struct MediaThumbAsyncGrid: View {
     @State var dragStart: CGPoint = CGPoint()
     @State var dragEnd: CGPoint = CGPoint()
 
-    init(idealGridItemSize: Binding<Double>, multi_select: Binding<Bool>, minGridItemSize: Double, mongo_holder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true) {
+    init(idealGridItemSize: Binding<Double>, multi_select: Binding<Bool>, minGridItemSize: Double, mongo_holder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
         self._idealGridItemSize=idealGridItemSize
         self._multi_select=multi_select
         self.minGridItemSize=minGridItemSize
@@ -41,10 +42,11 @@ struct MediaThumbAsyncGrid: View {
         let mVmodel = MediaItemsViewModel(mongo_holder: mongo_holder, moc: PersistenceController.shared.container.viewContext, appDelegate: appDelegate)
         self._mediaVModel=StateObject(wrappedValue: mVmodel)
         self.scrollable=scrollable
+        self.horizontalScroll=horizontalScroll
         self._gridViewModel=StateObject(wrappedValue: GridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
     }
     
-    init(idealGridItemSize: Binding<Double>, minGridItemSize: Double, mongo_holder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true) {
+    init(idealGridItemSize: Binding<Double>, minGridItemSize: Double, mongo_holder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
         let multi_select: Binding<Bool> = Binding {
             false
         } set: { _ in
@@ -58,6 +60,7 @@ struct MediaThumbAsyncGrid: View {
         let mVmodel = MediaItemsViewModel(mongo_holder: mongo_holder, moc: PersistenceController.shared.container.viewContext, appDelegate: appDelegate)
         self._mediaVModel=StateObject(wrappedValue: mVmodel)
         self.scrollable=scrollable
+        self.horizontalScroll=horizontalScroll
         self._gridViewModel=StateObject(wrappedValue: GridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
     }
     
@@ -65,14 +68,8 @@ struct MediaThumbAsyncGrid: View {
         GeometryReader { geometry in
             let grid = ZStack(alignment: .topLeading) {
                 Rectangle()
-                    .frame(width: geometry.size.width, height: gridViewModel.zstack_height)
+                    .frame(width: horizontalScroll ? CGFloat(mediaVModel.item_order.count)*idealGridItemSize : geometry.size.width, height: horizontalScroll ? idealGridItemSize : gridViewModel.zstack_height)
                     .opacity(0)
-                /*ForEach(gridViewModel.offsets.indices, id: \.self) { i in
-                    if(i<mediaVModel.item_order.count) {
-                        mediaVModel.items[mediaVModel.item_order[i]]?.view
-                            .frame(width: gridViewModel.photo_width, height: gridViewModel.photo_width)
-                            .offset(gridViewModel.offsets[i])
-                    }*/
                 ForEach(mediaVModel.item_order, id: \.hex) { object in
                     if let item = mediaVModel.items[object] {
                         let dimensions = item.item.getDisplayDimensions()
@@ -154,7 +151,7 @@ struct MediaThumbAsyncGrid: View {
                     }
                     
                 }
-                if dragging {
+                if dragging && !horizontalScroll {
                     Rectangle()
                         .fill(Color.blue.opacity(0.25))
                         .border(.blue)
@@ -191,10 +188,12 @@ struct MediaThumbAsyncGrid: View {
             
             VStack {
                 if(scrollable) {
-                    ScrollView(.vertical,showsIndicators: true) {
+                    ScrollView(horizontalScroll ? .horizontal : .vertical, showsIndicators: true) {
                             grid
                                 .onFrameChange { (frame) in
-                                    mediaVModel.onScrollFrameUpdate(frame, width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photo_width)
+                                    if !horizontalScroll {
+                                        mediaVModel.onScrollFrameUpdate(frame, width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photo_width)
+                                    }
                                 }
                     }
                 } else /*if(!mediaVModel.isFetching)*/ {
@@ -207,7 +206,7 @@ struct MediaThumbAsyncGrid: View {
                 }
             })
             .onChange(of: geometry.size) { newValue in
-                if(!mediaVModel.isFetching && mediaVModel.items.count>0) {
+                if(!mediaVModel.isFetching && mediaVModel.items.count>0 && !horizontalScroll) {
                     DispatchQueue.main.async {
                         gridViewModel.setOffsets(width: newValue.width, idealGridItemSize: idealGridItemSize)
                     }
@@ -218,9 +217,9 @@ struct MediaThumbAsyncGrid: View {
                 if(!mediaVModel.isFetching && mediaVModel.items.count>0) {
                     DispatchQueue.main.async {
                         withAnimation {
-                            gridViewModel.setOffsets(width: geometry.size.width, idealGridItemSize: newValue)
+                            gridViewModel.setOffsets(width: horizontalScroll ? CGFloat(mediaVModel.item_order.count)*idealGridItemSize : geometry.size.width, idealGridItemSize: newValue)
                         }
-                        mediaVModel.updateRangeValuesForResize(width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photo_width)
+                        mediaVModel.updateRangeValuesForResize(width: horizontalScroll ? CGFloat(mediaVModel.item_order.count)*idealGridItemSize : geometry.size.width, height: horizontalScroll ? idealGridItemSize : geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photo_width)
                     }
                 }
             })
@@ -228,9 +227,9 @@ struct MediaThumbAsyncGrid: View {
                 Task {
                     do {
                         try await mediaVModel.fetchRows(limit: self.limit, filter: self.filter)
-                        gridViewModel.setOffsets(width: geometry.size.width, idealGridItemSize: idealGridItemSize)
+                        gridViewModel.setOffsets(width: horizontalScroll ? CGFloat(mediaVModel.item_order.count)*idealGridItemSize : geometry.size.width, idealGridItemSize: idealGridItemSize)
 
-                        mediaVModel.setRangeValues(zstack_origin_y: 0, width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photo_width)
+                        mediaVModel.setRangeValues(zstack_origin_y: 0, width: horizontalScroll ? CGFloat(mediaVModel.item_order.count)*idealGridItemSize : geometry.size.width, height: horizontalScroll ? idealGridItemSize : geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photo_width)
                     } catch {}
                 }
             }

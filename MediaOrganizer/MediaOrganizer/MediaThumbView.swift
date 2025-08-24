@@ -13,6 +13,7 @@ struct MediaThumbView: View {
     @AppStorage("api_endpoint_url") private var api_endpoint_url: String = ""
     
     var appDelegate: AppDelegate
+    //TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
     @ObservedObject var thumbVModel: ThumbViewModel
     
     init(appDelegate: AppDelegate, thumbVModel: ThumbViewModel) {
