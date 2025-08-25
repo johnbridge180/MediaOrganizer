@@ -23,7 +23,7 @@ class MediaItemsViewModel: ObservableObject {
     @Published var item_order:[BSONObjectID] = []
     @Published var items:[BSONObjectID:MediaItemHolder] = [:]
     
-    private var item_vModels:[BSONObjectID:ThumbViewModel] = [:]
+    private var item_vModels:[BSONObjectID:ThumbnailViewModel] = [:]
     
     private var lastScrollFrameUpdate: Date
     private var lastSeenZStackOrigin: CGFloat = 0.0
@@ -60,9 +60,9 @@ class MediaItemsViewModel: ObservableObject {
                 let cache_rows = try moc.fetch(fetchRequest)
                 if self.item_vModels[item._id] == nil || self.items[item._id] == nil {
                     let cache_row = (cache_rows.count>0 ? (cache_rows[0] as? PreviewCache) : nil)
-                    let item_vModel = ThumbViewModel(item, cache_row: cache_row, makeCGImageQueue: makeCGImageQueue)
+                    let item_vModel = ThumbnailViewModel(item, cache_row: cache_row, makeCGImageQueue: makeCGImageQueue)
                     self.item_vModels[item._id]=item_vModel
-                    self.items[item._id]=MediaItemHolder(item: item, cache_row: cache_row, view: MediaThumbView(appDelegate: appDelegate, thumbVModel: item_vModel))
+                    self.items[item._id]=MediaItemHolder(item: item, cache_row: cache_row, view: ThumbnailView(appDelegate: appDelegate, thumbVModel: item_vModel))
                 }
                 new_item_order.append(item._id)
             }

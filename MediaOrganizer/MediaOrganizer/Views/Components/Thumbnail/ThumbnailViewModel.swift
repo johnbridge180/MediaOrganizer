@@ -1,5 +1,5 @@
 //
-//  ThumbViewModel.swift
+//  ThumbnailViewModel.swift
 //  MediaOrganizer
 //
 //  Created by John Bridge on 1/5/23.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-class ThumbViewModel: ObservableObject {
+class ThumbnailViewModel: ObservableObject {
     @AppStorage("api_endpoint_url") private var api_endpoint_url: String = ""
     
     var image_view: Image? = nil

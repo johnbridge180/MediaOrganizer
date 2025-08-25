@@ -52,5 +52,5 @@ struct MediaItemHolder: Hashable, Identifiable {
     }
     let item: MediaItem
     let cache_row: PreviewCache?
-    var view: MediaThumbView
+    var view: ThumbnailView
 }

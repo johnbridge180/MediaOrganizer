@@ -1,5 +1,5 @@
 //
-//  MediaThumbAsyncGrid.swift
+//  PhotoGridView.swift
 //  MediaOrganizer
 //
 //  Created by John Bridge on 12/30/22.
@@ -13,7 +13,7 @@ struct PhotoGridRow: Identifiable {
     var items: [MediaItemHolder]
 }
 
-struct MediaThumbAsyncGrid: View {
+struct PhotoGridView: View {
     @Environment(\.managedObjectContext) private var moc
     
     @Binding var idealGridItemSize: Double
@@ -25,7 +25,7 @@ struct MediaThumbAsyncGrid: View {
     let filter: BSONDocument
     
     @StateObject var mediaVModel: MediaItemsViewModel
-    @StateObject var gridViewModel: GridViewModel
+    @StateObject var gridViewModel: PhotoGridViewModel
     
     @State var selected: [BSONObjectID:Bool] = [:]
     
@@ -43,7 +43,7 @@ struct MediaThumbAsyncGrid: View {
         self._mediaVModel=StateObject(wrappedValue: mVmodel)
         self.scrollable=scrollable
         self.horizontalScroll=horizontalScroll
-        self._gridViewModel=StateObject(wrappedValue: GridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
+        self._gridViewModel=StateObject(wrappedValue: PhotoGridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
     }
     
     init(idealGridItemSize: Binding<Double>, minGridItemSize: Double, mongo_holder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
@@ -61,7 +61,7 @@ struct MediaThumbAsyncGrid: View {
         self._mediaVModel=StateObject(wrappedValue: mVmodel)
         self.scrollable=scrollable
         self.horizontalScroll=horizontalScroll
-        self._gridViewModel=StateObject(wrappedValue: GridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
+        self._gridViewModel=StateObject(wrappedValue: PhotoGridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
     }
     
     var body: some View {
@@ -243,9 +243,9 @@ struct MediaThumbAsyncGrid: View {
     }
 }
 
-struct MediaThumbAsyncGrid_Previews: PreviewProvider {
+struct PhotoGridView_Previews: PreviewProvider {
     static var previews: some View {
-        MediaThumbAsyncGrid(idealGridItemSize: Binding(get: { return 100.0}, set: {_ in }), minGridItemSize: 50.0, mongo_holder: MongoClientHolder(), appDelegate: AppDelegate(), filter: [:], limit: 10, scrollable: true)
+        PhotoGridView(idealGridItemSize: Binding(get: { return 100.0}, set: {_ in }), minGridItemSize: 50.0, mongo_holder: MongoClientHolder(), appDelegate: AppDelegate(), filter: [:], limit: 10, scrollable: true)
     }
 }
 

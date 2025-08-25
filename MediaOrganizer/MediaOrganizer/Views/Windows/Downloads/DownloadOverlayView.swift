@@ -43,8 +43,8 @@ struct DownloadItemView: View {
     
     var body: some View {
         HStack {
-            let thumbViewModel = ThumbViewModel(download.item, makeCGImageQueue: downloadOverlayQueue)
-            let thumbView = MediaThumbView(appDelegate: appDelegate, thumbVModel: thumbViewModel)
+            let thumbViewModel = ThumbnailViewModel(download.item, makeCGImageQueue: downloadOverlayQueue)
+            let thumbView = ThumbnailView(appDelegate: appDelegate, thumbVModel: thumbViewModel)
             thumbView
                 .frame(maxWidth: 75, maxHeight: 75)
                 .onAppear {

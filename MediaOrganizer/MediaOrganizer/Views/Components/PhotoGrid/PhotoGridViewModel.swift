@@ -1,5 +1,5 @@
 //
-//  Grid.swift
+//  PhotoGridViewModel.swift
 //  MediaOrganizer
 //
 //  Created by John Bridge on 1/5/23.
@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import SwiftBSON
 
-class GridViewModel: ObservableObject {
+class PhotoGridViewModel: ObservableObject {
     
     let minGridItemSize: Double
     

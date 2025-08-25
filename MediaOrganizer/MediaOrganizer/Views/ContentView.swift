@@ -43,10 +43,7 @@ struct ContentView: View {
         NavigationView {
             List {
                 NavigationLink(tag: 1, selection: $selected_tab) {
-                    MediaThumbAsyncGrid(idealGridItemSize: $photo_size_slider_value, multi_select: $multi_select, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: [:])
-                        .onAppear {
-                            slider_disabled=false
-                        }
+                    PhotosView(idealGridItemSize: $photo_size_slider_value, multi_select: $multi_select, slider_disabled: $slider_disabled, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate)
                 } label: {
                     if #available(iOS 14.0, *) {
                         Image(systemName: "photo.on.rectangle.angled")
@@ -66,7 +63,7 @@ struct ContentView: View {
                     Text("Uploads")
                 }
                 NavigationLink(tag: 3, selection: $selected_tab) {
-                    Text("Events")
+                    EventsView()
                 } label: {
                     if #available(iOS 16.0, macOS 13.0, *) {
                         Image(systemName: "figure.track.and.field")

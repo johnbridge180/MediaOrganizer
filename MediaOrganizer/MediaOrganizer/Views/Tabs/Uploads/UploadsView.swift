@@ -68,7 +68,7 @@ struct UploadsView: View {
                         .fill(.separator)
                         .frame(maxWidth: .infinity, maxHeight: 2)
                         .padding(EdgeInsets(top: -5, leading: 15, bottom: 0, trailing: 0))
-                    MediaThumbAsyncGrid(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: ["upload_id":.objectID(upload._id)], horizontalScroll: false)
+                    PhotoGridView(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: ["upload_id":.objectID(upload._id)], horizontalScroll: false)
                         .frame(width: geometry.size.width)
                 }
             } else {
@@ -111,7 +111,7 @@ struct UploadsView: View {
                                         .fill(.separator)
                                         .frame(maxWidth: .infinity, maxHeight: 2)
                                         .padding(EdgeInsets(top: -5, leading: 15, bottom: 0, trailing: 0))
-                                    MediaThumbAsyncGrid(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: ["upload_id":.objectID(upload._id)], horizontalScroll: true)
+                                    PhotoGridView(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: ["upload_id":.objectID(upload._id)], horizontalScroll: true)
                                         .frame(width: geometry.size.width, height: CGFloat(idealGridItemSize))
                                 }
                             }
