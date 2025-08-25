@@ -216,37 +216,125 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		FC9F21AD00000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				FC455E47296A1B730013E88E /* MediaItem.swift */,
+				FC455E4B296A83A40013E88E /* DownloadModel.swift */,
+				FCFA10B728ACBC3B009A5A65 /* Persistence.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000002 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				FC39B933295A244F003F3648 /* MongoClientHolder.swift */,
+				FC455E4D296A8DE80013E88E /* DownloadManager.swift */,
+				FC673FD22E5A575800CC2113 /* DownloadOperation.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000003 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				FC455E45296A0A4D0013E88E /* Tools.swift */,
+				FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000004 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */,
+				FC455E422969F3ED0013E88E /* MediaItemDetailViewModel.swift */,
+				FC78100E2967D93E00C0D641 /* GridViewModel.swift */,
+				FC78100C2967CD1400C0D641 /* ThumbViewModel.swift */,
+				FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000005 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FCFA10B028ACBC3B009A5A65 /* ContentView.swift */,
+				FC9F21AD00000008 /* Components */,
+				FC9F21AD00000009 /* Tabs */,
+				FC9F21AD00000010 /* Modals */,
+				FC9F21AD00000011 /* Overlays */,
+				FC39B92B2958F724003F3648 /* Settings */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000006 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				FCFA10B228ACBC3B009A5A65 /* Assets.xcassets */,
+				FCFA10B428ACBC3B009A5A65 /* Preview Content */,
+				FC39B93229591FAC003F3648 /* Info.plist */,
+				FCFA10BC28ACBC3B009A5A65 /* MediaOrganizer.entitlements */,
+				FCFA10B928ACBC3B009A5A65 /* MediaOrganizer.xcdatamodeld */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000008 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				FC39B91F29577FCA003F3648 /* MediaThumbView.swift */,
+				FC78DEA5295F44AF009F3F27 /* MediaThumbAsyncGrid.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000009 /* Tabs */ = {
+			isa = PBXGroup;
+			children = (
+				FC9F21AD00000012 /* UploadsTab */,
+			);
+			path = Tabs;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000010 /* Modals */ = {
+			isa = PBXGroup;
+			children = (
+				FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */,
+				FCDC4940295B725B00E2DDFE /* MediaItemDetailWindow.swift */,
+			);
+			path = Modals;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000011 /* Overlays */ = {
+			isa = PBXGroup;
+			children = (
+				FC455E49296A7EBE0013E88E /* DownloadOverlayView.swift */,
+				FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */,
+			);
+			path = Overlays;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000012 /* UploadsTab */ = {
+			isa = PBXGroup;
+			children = (
+				FC78DEA1295E5395009F3F27 /* UploadsView.swift */,
+			);
+			path = UploadsTab;
+			sourceTree = "<group>";
+		};
 		FCFA10AD28ACBC3B009A5A65 /* MediaOrganizer */ = {
 			isa = PBXGroup;
 			children = (
-				FC39B93229591FAC003F3648 /* Info.plist */,
-				FCFA10B228ACBC3B009A5A65 /* Assets.xcassets */,
-				FCFA10B728ACBC3B009A5A65 /* Persistence.swift */,
-				FCFA10BC28ACBC3B009A5A65 /* MediaOrganizer.entitlements */,
-				FCFA10B928ACBC3B009A5A65 /* MediaOrganizer.xcdatamodeld */,
 				FCFA10AE28ACBC3B009A5A65 /* MediaOrganizerApp.swift */,
-				FC455E4D296A8DE80013E88E /* DownloadManager.swift */,
-				FC455E4B296A83A40013E88E /* DownloadModel.swift */,
-				FCFA10B428ACBC3B009A5A65 /* Preview Content */,
-				FC39B92B2958F724003F3648 /* Settings */,
-				FCFA10B028ACBC3B009A5A65 /* ContentView.swift */,
-				FC39B91F29577FCA003F3648 /* MediaThumbView.swift */,
-				FC78100C2967CD1400C0D641 /* ThumbViewModel.swift */,
-				FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */,
-				FC39B933295A244F003F3648 /* MongoClientHolder.swift */,
-				FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */,
-				FC455E422969F3ED0013E88E /* MediaItemDetailViewModel.swift */,
-				FCDC4940295B725B00E2DDFE /* MediaItemDetailWindow.swift */,
-				FC78DEA1295E5395009F3F27 /* UploadsView.swift */,
-				FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */,
-				FC78DEA5295F44AF009F3F27 /* MediaThumbAsyncGrid.swift */,
-				FC78100E2967D93E00C0D641 /* GridViewModel.swift */,
-				FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */,
-				FC455E45296A0A4D0013E88E /* Tools.swift */,
-				FC455E47296A1B730013E88E /* MediaItem.swift */,
-				FC455E49296A7EBE0013E88E /* DownloadOverlayView.swift */,
-				FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */,
-				FC673FD22E5A575800CC2113 /* DownloadOperation.swift */,
+				FC9F21AD00000001 /* Models */,
+				FC9F21AD00000002 /* Services */,
+				FC9F21AD00000003 /* Utilities */,
+				FC9F21AD00000004 /* ViewModels */,
+				FC9F21AD00000005 /* Views */,
+				FC9F21AD00000006 /* Resources */,
 			);
 			path = MediaOrganizer;
 			sourceTree = "<group>";
@@ -690,15 +778,15 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = MediaOrganizer/MediaOrganizer.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MediaOrganizer/Resources/MediaOrganizer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"MediaOrganizer/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"MediaOrganizer/Resources/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MediaOrganizer/Info.plist;
+				INFOPLIST_FILE = MediaOrganizer/Resources/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -726,14 +814,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = MediaOrganizer/MediaOrganizer.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MediaOrganizer/Resources/MediaOrganizer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"MediaOrganizer/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"MediaOrganizer/Resources/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MediaOrganizer/Info.plist;
+				INFOPLIST_FILE = MediaOrganizer/Resources/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
