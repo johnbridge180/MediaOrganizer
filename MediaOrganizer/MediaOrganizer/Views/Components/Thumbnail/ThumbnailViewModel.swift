@@ -45,7 +45,9 @@ class ThumbnailViewModel: ObservableObject {
                 let cacheURL = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
                 cachedImageLocation=cacheURL.appendingPathComponent(self.item._id.hex+".thumb."+(row.thumb_ext ?? "jpg"))
                 tinythumbLocation=cacheURL.appendingPathComponent(item._id.hex+".tiny."+(row.thumb_ext ?? "jpg"))
-            } catch {}
+            } catch {
+                print("Error setting up cache directories: \(error)")
+            }
         } else {
             isCached=false
         }
@@ -113,7 +115,7 @@ class ThumbnailViewModel: ObservableObject {
                 self.objectWillChange.send()
             }
         } catch {
-            print("file error: \(error)")
+            print("Error processing downloaded thumbnail for \(item._id.hex): \(error)")
         }
     }
     

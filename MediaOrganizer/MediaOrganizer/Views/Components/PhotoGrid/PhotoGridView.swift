@@ -92,13 +92,17 @@ struct PhotoGridView: View {
                         gridViewModel.setOffsets(width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count)*idealGridItemSize : geometry.size.width, idealGridItemSize: idealGridItemSize)
 
                         mediaVModel.setRangeValues(zstackOriginY: 0, width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count)*idealGridItemSize : geometry.size.width, height: horizontalScroll ? idealGridItemSize : geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
-                    } catch {}
+                    } catch {
+                        print("Error fetching media items: \(error)")
+                    }
                 }
             }
             .onDisappear {
                 do {
                     try moc.save()
-                } catch {}
+                } catch {
+                    print("Error saving managed object context: \(error)")
+                }
             }
         }
         .frame(minWidth: 300, minHeight: scrollable ? 0 : gridViewModel.zstackHeight)
