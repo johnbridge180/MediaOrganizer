@@ -49,7 +49,6 @@ struct PhotoGridView: View {
     var body: some View {
         GeometryReader { geometry in
             let grid = ZStack(alignment: .topLeading) {
-                // Background rectangle for sizing
                 Rectangle()
                     .frame(
                         width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count) * idealGridItemSize : geometry.size.width,
@@ -57,7 +56,6 @@ struct PhotoGridView: View {
                     )
                     .opacity(0)
                 
-                // Photo grid items
                 ForEach(mediaVModel.itemOrder, id: \.hex) { object in
                     if let item = mediaVModel.items[object] {
                         let dimensions = item.item.getDisplayDimensions()
@@ -101,7 +99,6 @@ struct PhotoGridView: View {
                     }
                 }
                 
-                // Drag selection overlay
                 if dragging && !horizontalScroll {
                     Rectangle()
                         .fill(Color.blue.opacity(0.25))

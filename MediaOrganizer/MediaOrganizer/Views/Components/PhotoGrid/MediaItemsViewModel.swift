@@ -85,12 +85,10 @@ class MediaItemsViewModel: ObservableObject {
                 } else if let curItemHexval = UInt64(curItem._id.hex, radix: 16), let newItemHexval = UInt64(newItem._id.hex, radix: 16), curItemHexval>newItemHexval {
                     itemOrder.remove(at: i)
                 } else {
-                    // curItem._id<newItem._id
                     itemOrder.insert(newItem._id, at: i)
                     i+=1;j+=1
                 }
             } else {
-                // curItem.time<newItem.time
                 itemOrder.insert(newItem._id, at: i)
                 i+=1;j+=1
             }
@@ -114,7 +112,6 @@ class MediaItemsViewModel: ObservableObject {
         let lastScrollFrameUpdate = Date()
         let lastResizeUpdate=self.lastResizeUpdate
         self.lastScrollFrameUpdate = lastScrollFrameUpdate
-        // might want to use NSOperationQueue later (slightly less wasteful of CPU resources maybe?)
         self.updateTypeQueue.asyncAfter(deadline: .now() + Constants.scrollUpdateDelay) {
             if self.lastScrollFrameUpdate==lastScrollFrameUpdate && self.lastResizeUpdate==lastResizeUpdate {
                 self.setRangeValues(isScrollUpdate: true, zstackOriginY: frame.origin.y, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
