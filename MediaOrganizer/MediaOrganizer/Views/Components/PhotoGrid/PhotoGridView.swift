@@ -48,10 +48,108 @@ struct PhotoGridView: View {
 
     var body: some View {
         GeometryReader { geometry in
+            let grid = ZStack(alignment: .topLeading) {
+                // Background rectangle for sizing
+                Rectangle()
+                    .frame(
+                        width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count) * idealGridItemSize : geometry.size.width,
+                        height: horizontalScroll ? idealGridItemSize : gridViewModel.zstackHeight
+                    )
+                    .opacity(0)
+                
+                // Photo grid items
+                ForEach(mediaVModel.itemOrder, id: \.hex) { object in
+                    if let item = mediaVModel.items[object] {
+                        let dimensions = item.item.getDisplayDimensions()
+                        ZStack {
+                            item.view
+                            if multiSelect {
+                                Button {
+                                    handleItemSelection(for: item.item._id)
+                                } label: {
+                                    Image(systemName: selected[item.item._id] ?? false ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: ThumbnailViewModel.Constants.largeIconThreshold < gridViewModel.photoWidth ? ThumbnailViewModel.Constants.largeIconSize : gridViewModel.photoWidth/ThumbnailViewModel.Constants.iconSizeDivider))
+                                        .padding()
+                                        .frame(
+                                            width: dimensions.width >= dimensions.height ?
+                                            gridViewModel.photoWidth : gridViewModel.photoWidth * Double(dimensions.width)/Double(dimensions.height),
+                                            height: dimensions.width >= dimensions.height ?
+                                            gridViewModel.photoWidth * Double(dimensions.height)/Double(dimensions.width) : gridViewModel.photoWidth
+                                        )
+                                }
+                                .buttonStyle(ImageSelectButton(selected: selected[item.item._id] ?? false))
+                                .foregroundColor(Color.white)
+                            }
+                        }
+                        .frame(width: gridViewModel.photoWidth, height: gridViewModel.photoWidth)
+                        .offset(gridViewModel.offsets[object] ?? CGSize())
+                        .contextMenu {
+                            if selected[item.item._id] == true {
+                                Button("Download \(selected.count) items") {
+                                    for (key, value) in selected where value {
+                                        if let mediaItem = mediaVModel.items[key] {
+                                            DownloadManager.shared.download(mediaItem.item)
+                                        }
+                                    }
+                                }
+                            } else {
+                                Button("Download \(item.item.name)") {
+                                    DownloadManager.shared.download(item.item)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Drag selection overlay
+                if dragging && !horizontalScroll {
+                    Rectangle()
+                        .fill(Color.blue.opacity(0.25))
+                        .border(.blue)
+                        .frame(width: abs(dragEnd.x - dragStart.x), height: abs(dragEnd.y - dragStart.y))
+                        .offset(
+                            x: dragEnd.x > dragStart.x ? dragStart.x : dragEnd.x,
+                            y: dragEnd.y > dragStart.y ? dragStart.y : dragEnd.y
+                        )
+                }
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        dragging = true
+                        dragStart = value.startLocation
+                        dragEnd = value.location
+                    }
+                    .onEnded { _ in
+                        let rectangle = (
+                            x1: dragEnd.x > dragStart.x ? dragStart.x : dragEnd.x,
+                            y1: dragEnd.y > dragStart.y ? dragStart.y : dragEnd.y,
+                            x2: dragEnd.x > dragStart.x ? dragEnd.x : dragStart.x,
+                            y2: dragEnd.y > dragStart.y ? dragEnd.y : dragStart.y
+                        )
+                        
+                        if !(rectangle.x1 == 0 && rectangle.y1 == 0 && rectangle.x2 == 0 && rectangle.y2 == 0) {
+                            if !NSEvent.modifierFlags.contains(.command) {
+                                selected = [:]
+                            }
+                            multiSelect = true
+                            let photosInRectangle = gridViewModel.getPhotosInRectangle(rectangle)
+                            for selectedObjectID in photosInRectangle {
+                                selected[selectedObjectID] = true
+                            }
+                        }
+                        
+                        dragging = false
+                        dragStart = CGPoint()
+                        dragEnd = CGPoint()
+                    }
+            )
+
             VStack {
                 if scrollable {
                     ScrollView(horizontalScroll ? .horizontal : .vertical, showsIndicators: true) {
-                        photoGrid(geometry: geometry)
+                        grid
                             .onFrameChange { frame in
                                 if !horizontalScroll {
                                     mediaVModel.onScrollFrameUpdate(frame, width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
@@ -59,7 +157,7 @@ struct PhotoGridView: View {
                             }
                     }
                 } else {
-                    photoGrid(geometry: geometry)
+                    grid
                 }
             }
             .onChange(of: multiSelect, perform: { newValue in
@@ -108,138 +206,7 @@ struct PhotoGridView: View {
         .frame(minWidth: 300, minHeight: scrollable ? 0 : gridViewModel.zstackHeight)
     }
     
-    private func photoGrid(geometry: GeometryProxy) -> some View {
-        ZStack(alignment: .topLeading) {
-            backgroundRectangle(geometry: geometry)
-            photoGridItems
-            if dragging && !horizontalScroll {
-                dragSelectionOverlay
-            }
-        }
-        .contentShape(Rectangle())
-        .gesture(dragGesture)
-    }
-    
-    private func backgroundRectangle(geometry: GeometryProxy) -> some View {
-        Rectangle()
-            .frame(
-                width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count) * idealGridItemSize : geometry.size.width,
-                height: horizontalScroll ? idealGridItemSize : gridViewModel.zstackHeight
-            )
-            .opacity(0)
-    }
-    
-    private var photoGridItems: some View {
-        ForEach(mediaVModel.itemOrder, id: \.hex) { object in
-            if let item = mediaVModel.items[object] {
-                photoGridItem(for: item, object: object)
-            }
-        }
-    }
-    
-    private func photoGridItem(for item: MediaItemHolder, object: BSONObjectID) -> some View {
-        let dimensions = item.item.getDisplayDimensions()
-        return ZStack {
-            item.view
-            if multiSelect {
-                selectionButton(for: item, dimensions: dimensions)
-            }
-        }
-        .frame(width: gridViewModel.photoWidth, height: gridViewModel.photoWidth)
-        .offset(gridViewModel.offsets[object] ?? CGSize())
-        .contextMenu {
-            contextMenuContent(for: item)
-        }
-    }
-    
-    private func selectionButton(for item: MediaItemHolder, dimensions: (width: Int32, height: Int32)) -> some View {
-        Button {
-            handleItemSelection(for: item.item._id)
-        } label: {
-            Image(systemName: selected[item.item._id] ?? false ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: ThumbnailViewModel.Constants.largeIconThreshold < gridViewModel.photoWidth ? ThumbnailViewModel.Constants.largeIconSize : gridViewModel.photoWidth/ThumbnailViewModel.Constants.iconSizeDivider))
-                .padding()
-                .frame(
-                    width: dimensions.width >= dimensions.height ?
-                    gridViewModel.photoWidth : gridViewModel.photoWidth * Double(dimensions.width)/Double(dimensions.height),
-                    height: dimensions.width >= dimensions.height ?
-                    gridViewModel.photoWidth * Double(dimensions.height)/Double(dimensions.width) : gridViewModel.photoWidth
-                )
-        }
-        .buttonStyle(ImageSelectButton(selected: selected[item.item._id] ?? false))
-        .foregroundColor(Color.white)
-    }
-    
-    @ViewBuilder
-    private func contextMenuContent(for item: MediaItemHolder) -> some View {
-        if selected[item.item._id] == true {
-            Button("Download \(selected.count) items") {
-                for (key, value) in selected where value {
-                    if let mediaItem = mediaVModel.items[key] {
-                        DownloadManager.shared.download(mediaItem.item)
-                    }
-                }
-            }
-        } else {
-            Button("Download \(item.item.name)") {
-                DownloadManager.shared.download(item.item)
-            }
-        }
-    }
-    
-    private var dragSelectionOverlay: some View {
-        Rectangle()
-            .fill(Color.blue.opacity(0.25))
-            .border(.blue)
-            .frame(width: abs(dragEnd.x - dragStart.x), height: abs(dragEnd.y - dragStart.y))
-            .offset(
-                x: dragEnd.x > dragStart.x ? dragStart.x : dragEnd.x,
-                y: dragEnd.y > dragStart.y ? dragStart.y : dragEnd.y
-            )
-    }
-    
-    private var dragGesture: some Gesture {
-        DragGesture()
-            .onChanged { value in
-                dragging = true
-                dragStart = value.startLocation
-                dragEnd = value.location
-            }
-            .onEnded { _ in
-                handleDragEnd()
-            }
-    }
-    
-    private func handleDragEnd() {
-        let rectangle = (
-            x1: dragEnd.x > dragStart.x ? dragStart.x : dragEnd.x,
-            y1: dragEnd.y > dragStart.y ? dragStart.y : dragEnd.y,
-            x2: dragEnd.x > dragStart.x ? dragEnd.x : dragStart.x,
-            y2: dragEnd.y > dragStart.y ? dragEnd.y : dragStart.y
-        )
-        
-        guard !(rectangle.x1 == 0 && rectangle.y1 == 0 && rectangle.x2 == 0 && rectangle.y2 == 0) else {
-            resetDragState()
-            return
-        }
-        
-        if !NSEvent.modifierFlags.contains(.command) {
-            selected = [:]
-        }
-        multiSelect = true
-        let photosInRectangle = gridViewModel.getPhotosInRectangle(rectangle)
-        for selectedObjectID in photosInRectangle {
-            selected[selectedObjectID] = true
-        }
-        
-        resetDragState()
-    }
-    
-    private func resetDragState() {
-        dragging = false
-        dragStart = CGPoint()
-        dragEnd = CGPoint()
-    }
+    // MARK: - Selection Logic
     
     private func handleItemSelection(for itemId: BSONObjectID) {
         if NSEvent.modifierFlags.contains(.shift) && !selected.isEmpty {
