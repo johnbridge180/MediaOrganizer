@@ -67,13 +67,13 @@ struct MediaItemHolder: Hashable, Identifiable {
     }
 
     static func == (lhs: MediaItemHolder, rhs: MediaItemHolder) -> Bool {
-        return lhs.item._id.hex==rhs.item._id.hex
+        return lhs.item._id.hex == rhs.item._id.hex
     }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(item._id.hex)
     }
+    
     let item: MediaItem
     let cacheRow: PreviewCache?
-    var view: ThumbnailView
 }

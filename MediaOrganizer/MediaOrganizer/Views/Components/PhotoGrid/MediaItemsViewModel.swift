@@ -10,33 +10,18 @@ import MongoSwift
 import CoreData
 
 class MediaItemsViewModel: ObservableObject {
-    static let lowresTriggerWidth = 100.0
-
     let mongoHolder: MongoClientHolder
     let moc: NSManagedObjectContext
     weak var appDelegate: AppDelegate?
-
-    let updateTypeQueue: DispatchQueue
-    let makeCGImageQueue: DispatchQueue
 
     @Published var isFetching: Bool = false
     @Published var itemOrder: [BSONObjectID] = []
     @Published var items: [BSONObjectID: MediaItemHolder] = [:]
 
-    private var itemVModels: [BSONObjectID: ThumbnailViewModel] = [:]
-
-    private var lastScrollFrameUpdate: Date
-    private var lastSeenZStackOrigin: CGFloat = 0.0
-    private var lastResizeUpdate: Date
-
     init(mongoHolder: MongoClientHolder, moc: NSManagedObjectContext, appDelegate: AppDelegate) {
         self.mongoHolder = mongoHolder
         self.moc = moc
         self.appDelegate = appDelegate
-        self.updateTypeQueue = DispatchQueue(label: "com.jbridge.updateTypeQueue", qos: .background)
-        self.makeCGImageQueue = DispatchQueue(label: "com.jbridge.makeCGImageQueue", qos: .background)
-        self.lastScrollFrameUpdate = Date()
-        self.lastResizeUpdate = Date()
     }
 
     @MainActor
@@ -59,13 +44,9 @@ class MediaItemsViewModel: ObservableObject {
                 fetchRequest.fetchLimit=1
                 fetchRequest.predicate = NSPredicate(format: "oid_hex == %@", item._id.hex)
                 let cacheRows = try moc.fetch(fetchRequest)
-                if self.itemVModels[item._id] == nil || self.items[item._id] == nil {
+                if self.items[item._id] == nil {
                     let cacheRow = (!cacheRows.isEmpty ? (cacheRows[0] as? PreviewCache) : nil)
-                    let itemVModel = ThumbnailViewModel(item, cacheRow: cacheRow, makeCGImageQueue: makeCGImageQueue)
-                    self.itemVModels[item._id] = itemVModel
-                    if let appDelegate = appDelegate {
-                        self.items[item._id] = MediaItemHolder(item: item, cacheRow: cacheRow, view: ThumbnailView(appDelegate: appDelegate, thumbVModel: itemVModel))
-                    }
+                    self.items[item._id] = MediaItemHolder(item: item, cacheRow: cacheRow)
                 }
                 newItemOrder.append(item._id)
             }
@@ -100,69 +81,8 @@ class MediaItemsViewModel: ObservableObject {
         isFetching = false
     }
 
-    func setStatus(for objects: [BSONObjectID], status: Int) {
-        for object in objects {
-            self.itemVModels[object]?.setDisplayType(status)
-        }
-    }
-
-    func onScrollFrameUpdate(_ frame: CGRect, width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
-        let lastScrollFrameUpdate = Date()
-        let lastResizeUpdate=self.lastResizeUpdate
-        self.lastScrollFrameUpdate = lastScrollFrameUpdate
-        // might want to use NSOperationQueue later (slightly less wasteful of CPU resources maybe?)
-        self.updateTypeQueue.asyncAfter(deadline: .now()+0.2) {
-            if self.lastScrollFrameUpdate==lastScrollFrameUpdate && self.lastResizeUpdate==lastResizeUpdate {
-                self.setRangeValues(isScrollUpdate: true, zstackOriginY: frame.origin.y, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
-            }
-        }
-    }
-
-    func updateRangeValuesForResize(width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
-        let lastResizeUpdate = Date()
-        self.lastResizeUpdate = lastResizeUpdate
-        self.updateTypeQueue.asyncAfter(deadline: .now()+0.5) {
-            if self.lastResizeUpdate==lastResizeUpdate {
-                self.setRangeValues(zstackOriginY: self.lastSeenZStackOrigin, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
-            }
-        }
-    }
-
-    func setRangeValues(isScrollUpdate: Bool = false, zstackOriginY: CGFloat, width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
-        if isScrollUpdate && abs(self.lastSeenZStackOrigin-zstackOriginY)<colWidth {
-            return
-        }
-        self.lastSeenZStackOrigin = zstackOriginY
-        if !self.isFetching, !self.itemOrder.isEmpty {
-            let assumedIndexRange = self.getAssumedDisplayedIndexRange(zstackOriginY: zstackOriginY, height: height, numColumns: numColumns, colWidth: colWidth)
-            if colWidth>MediaItemsViewModel.lowresTriggerWidth {
-                let modifier = numColumns
-                let bigthumbLowerBound = assumedIndexRange.lowerBound-modifier
-                var bigthumbIndexRange = ((bigthumbLowerBound>0) ? bigthumbLowerBound : 0)...assumedIndexRange.upperBound+modifier
-                bigthumbIndexRange = bigthumbIndexRange.clamped(to: 0...(itemOrder.count-1))
-                self.setStatus(for: Array(itemOrder[bigthumbIndexRange]), status: 2)
-                var tinyThumbOrder: [BSONObjectID] = []
-                for i in 0..<itemOrder.count where !bigthumbIndexRange.contains(i) {
-                    tinyThumbOrder.append(itemOrder[i])
-                }
-                self.setStatus(for: tinyThumbOrder, status: 1)
-            } else {
-                self.setStatus(for: Array(itemOrder[0...self.itemOrder.count-1]), status: 1)
-            }
-        }
-    }
-    func getAssumedDisplayedIndexRange(zstackOriginY: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) -> ClosedRange<Int> {
-        let maxNumRows: Int = colWidth==0 ? 0 : Int(ceil(height/colWidth))
-        let assumedAmtDisplayed: Int = maxNumRows*numColumns
-        // zstackOriginY will be negative after scrolling. Currently assuming that zstack starts with origin.y of 0, though it could potentially start elsewhere
-        let numRowsAboveVisibleArea: Int = Int(zstackOriginY>0 || colWidth==0 ? 0 : abs(zstackOriginY)/colWidth)
-        let startIndex: Int = numRowsAboveVisibleArea*numColumns
-        return startIndex...(startIndex+assumedAmtDisplayed)
-    }
-    
     private func cleanupUnusedItems() {
         let currentItemSet = Set(itemOrder)
         items = items.filter { currentItemSet.contains($0.key) }
-        itemVModels = itemVModels.filter { currentItemSet.contains($0.key) }
     }
 }
