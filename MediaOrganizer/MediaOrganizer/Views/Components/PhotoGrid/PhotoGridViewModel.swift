@@ -19,24 +19,48 @@ class PhotoGridViewModel: ObservableObject {
     var photoWidth: CGFloat = 0.0
     var zstackHeight: CGFloat = 0.0
     var numCols: Int = 0
+    
+    private var lastItemCount: Int = 0
+    private var lastWidth: CGFloat = 0
+    private var lastIdealSize: Double = 0
 
     init(minGridItemSize: Double, mediaViewModel: MediaItemsViewModel) {
-        self.minGridItemSize=minGridItemSize
-        self.mediaVModel=mediaViewModel
+        self.minGridItemSize = minGridItemSize
+        self.mediaVModel = mediaViewModel
     }
 
     func setOffsets(width: CGFloat, idealGridItemSize: Double) {
         let numCols = self.getNumColumns(width: width, idealGridItemSize: idealGridItemSize)
         let photoWidth = self.getColWidth(width: width, numCols: numCols)
-            self.offsets=[:]
-            self.numCols = numCols
-            self.photoWidth = photoWidth
-            for i in 0..<self.mediaVModel.itemOrder.count {
-                print("i: \(i)")
-                offsets[mediaVModel.itemOrder[i]]=self.getOffset(for: i, width: width, numCols: numCols, colWidth: photoWidth)
+        
+        let currentItemCount = mediaVModel.itemOrder.count
+        let canDoIncrementalUpdate = (width == lastWidth && 
+                                     idealGridItemSize == lastIdealSize && 
+                                     currentItemCount > lastItemCount &&
+                                     lastItemCount > 0)
+        
+        if canDoIncrementalUpdate {
+            for i in lastItemCount..<currentItemCount {
+                offsets[mediaVModel.itemOrder[i]] = self.getOffset(for: i, width: width, numCols: numCols, colWidth: photoWidth)
             }
-            self.zstackHeight = photoWidth*CGFloat(self.getNumRows(width: width, idealGridItemSize: idealGridItemSize, numCols: numCols))
-            self.objectWillChange.send()
+        } else {
+            let currentItemSet = Set(mediaVModel.itemOrder)
+            offsets = offsets.filter { currentItemSet.contains($0.key) }
+            for i in 0..<currentItemCount {
+                print("i: \(i)")
+                offsets[mediaVModel.itemOrder[i]] = self.getOffset(for: i, width: width, numCols: numCols, colWidth: photoWidth)
+            }
+        }
+        
+        self.numCols = numCols
+        self.photoWidth = photoWidth
+        self.zstackHeight = photoWidth*CGFloat(self.getNumRows(width: width, idealGridItemSize: idealGridItemSize, numCols: numCols))
+
+
+        lastItemCount = currentItemCount
+        lastWidth = width
+        lastIdealSize = idealGridItemSize
+        self.objectWillChange.send()
     }
 
     func getOffset(for index: Int, width: CGFloat, numCols: Int, colWidth: CGFloat) -> CGSize {

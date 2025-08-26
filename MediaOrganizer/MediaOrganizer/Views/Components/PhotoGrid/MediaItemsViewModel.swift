@@ -1,5 +1,5 @@
 //
-//  PhotoLoader.swift
+//  MediaItemsViewModel.swift
 //  MediaOrganizer
 //
 //  Created by John Bridge on 12/24/22.
@@ -30,19 +30,19 @@ class MediaItemsViewModel: ObservableObject {
     private var lastResizeUpdate: Date
 
     init(mongoHolder: MongoClientHolder, moc: NSManagedObjectContext, appDelegate: AppDelegate) {
-        self.mongoHolder=mongoHolder
-        self.moc=moc
-        self.appDelegate=appDelegate
+        self.mongoHolder = mongoHolder
+        self.moc = moc
+        self.appDelegate = appDelegate
         self.updateTypeQueue = DispatchQueue(label: "com.jbridge.updateTypeQueue", qos: .background)
         self.makeCGImageQueue = DispatchQueue(label: "com.jbridge.makeCGImageQueue", qos: .background)
-        self.lastScrollFrameUpdate=Date()
-        self.lastResizeUpdate=Date()
+        self.lastScrollFrameUpdate = Date()
+        self.lastResizeUpdate = Date()
     }
 
     @MainActor
     func fetchRows(limit: Int=0, filter: BSONDocument) async throws {
         print("filter: \(filter)")
-        isFetching=true
+        isFetching = true
         if mongoHolder.client==nil {
             await mongoHolder.connect()
         }
@@ -62,9 +62,9 @@ class MediaItemsViewModel: ObservableObject {
                 if self.itemVModels[item._id] == nil || self.items[item._id] == nil {
                     let cacheRow = (!cacheRows.isEmpty ? (cacheRows[0] as? PreviewCache) : nil)
                     let itemVModel = ThumbnailViewModel(item, cacheRow: cacheRow, makeCGImageQueue: makeCGImageQueue)
-                    self.itemVModels[item._id]=itemVModel
+                    self.itemVModels[item._id] = itemVModel
                     if let appDelegate = appDelegate {
-                        self.items[item._id]=MediaItemHolder(item: item, cacheRow: cacheRow, view: ThumbnailView(appDelegate: appDelegate, thumbVModel: itemVModel))
+                        self.items[item._id] = MediaItemHolder(item: item, cacheRow: cacheRow, view: ThumbnailView(appDelegate: appDelegate, thumbVModel: itemVModel))
                     }
                 }
                 newItemOrder.append(item._id)
@@ -96,7 +96,8 @@ class MediaItemsViewModel: ObservableObject {
         } else if j<newItemOrder.count {
             itemOrder.append(contentsOf: newItemOrder[j...newItemOrder.count-1])
         }
-        isFetching=false
+        cleanupUnusedItems()
+        isFetching = false
     }
 
     func setStatus(for objects: [BSONObjectID], status: Int) {
@@ -106,9 +107,9 @@ class MediaItemsViewModel: ObservableObject {
     }
 
     func onScrollFrameUpdate(_ frame: CGRect, width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
-        let lastScrollFrameUpdate=Date()
+        let lastScrollFrameUpdate = Date()
         let lastResizeUpdate=self.lastResizeUpdate
-        self.lastScrollFrameUpdate=lastScrollFrameUpdate
+        self.lastScrollFrameUpdate = lastScrollFrameUpdate
         // might want to use NSOperationQueue later (slightly less wasteful of CPU resources maybe?)
         self.updateTypeQueue.asyncAfter(deadline: .now()+0.2) {
             if self.lastScrollFrameUpdate==lastScrollFrameUpdate && self.lastResizeUpdate==lastResizeUpdate {
@@ -118,8 +119,8 @@ class MediaItemsViewModel: ObservableObject {
     }
 
     func updateRangeValuesForResize(width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
-        let lastResizeUpdate=Date()
-        self.lastResizeUpdate=lastResizeUpdate
+        let lastResizeUpdate = Date()
+        self.lastResizeUpdate = lastResizeUpdate
         self.updateTypeQueue.asyncAfter(deadline: .now()+0.5) {
             if self.lastResizeUpdate==lastResizeUpdate {
                 self.setRangeValues(zstackOriginY: self.lastSeenZStackOrigin, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
@@ -131,14 +132,14 @@ class MediaItemsViewModel: ObservableObject {
         if isScrollUpdate && abs(self.lastSeenZStackOrigin-zstackOriginY)<colWidth {
             return
         }
-        self.lastSeenZStackOrigin=zstackOriginY
+        self.lastSeenZStackOrigin = zstackOriginY
         if !self.isFetching, !self.itemOrder.isEmpty {
             let assumedIndexRange = self.getAssumedDisplayedIndexRange(zstackOriginY: zstackOriginY, height: height, numColumns: numColumns, colWidth: colWidth)
             if colWidth>MediaItemsViewModel.lowresTriggerWidth {
                 let modifier = numColumns
                 let bigthumbLowerBound = assumedIndexRange.lowerBound-modifier
                 var bigthumbIndexRange = ((bigthumbLowerBound>0) ? bigthumbLowerBound : 0)...assumedIndexRange.upperBound+modifier
-                bigthumbIndexRange=bigthumbIndexRange.clamped(to: 0...(itemOrder.count-1))
+                bigthumbIndexRange = bigthumbIndexRange.clamped(to: 0...(itemOrder.count-1))
                 self.setStatus(for: Array(itemOrder[bigthumbIndexRange]), status: 2)
                 var tinyThumbOrder: [BSONObjectID] = []
                 for i in 0..<itemOrder.count where !bigthumbIndexRange.contains(i) {
@@ -157,5 +158,11 @@ class MediaItemsViewModel: ObservableObject {
         let numRowsAboveVisibleArea: Int = Int(zstackOriginY>0 || colWidth==0 ? 0 : abs(zstackOriginY)/colWidth)
         let startIndex: Int = numRowsAboveVisibleArea*numColumns
         return startIndex...(startIndex+assumedAmtDisplayed)
+    }
+    
+    private func cleanupUnusedItems() {
+        let currentItemSet = Set(itemOrder)
+        items = items.filter { currentItemSet.contains($0.key) }
+        itemVModels = itemVModels.filter { currentItemSet.contains($0.key) }
     }
 }
