@@ -127,7 +127,14 @@ class ThumbnailQualityManager: ObservableObject {
         let registeredItems = Set(itemViewModels.keys)
         let itemsToRemove = registeredItems.subtracting(knownItems)
         
-        if itemsToRemove.count > 50 {
+        aggressiveMemoryCleanup(itemsToRemove: itemsToRemove, knownItems: knownItems)
+    }
+    
+    private func aggressiveMemoryCleanup(itemsToRemove: Set<BSONObjectID>, knownItems: Set<BSONObjectID>) {
+        let memoryPressureThreshold = 20
+        let farOffscreenThreshold = 100
+        
+        if itemsToRemove.count > memoryPressureThreshold {
             for itemId in itemsToRemove {
                 if let viewModel = itemViewModels[itemId] {
                     DispatchQueue.main.async {
@@ -135,6 +142,22 @@ class ThumbnailQualityManager: ObservableObject {
                     }
                 }
                 itemViewModels.removeValue(forKey: itemId)
+            }
+        }
+        
+        if itemViewModels.count > farOffscreenThreshold {
+            let currentVisible = viewportTracker.visibleItems
+            let currentNearVisible = viewportTracker.nearVisibleItems
+            let currentlyRelevant = currentVisible.union(currentNearVisible)
+            
+            let candidatesForDowngrade = Set(itemViewModels.keys).subtracting(currentlyRelevant).subtracting(knownItems)
+            
+            for itemId in candidatesForDowngrade {
+                if let viewModel = itemViewModels[itemId] {
+                    DispatchQueue.main.async {
+                        viewModel.setDisplayType(0)
+                    }
+                }
             }
         }
     }
