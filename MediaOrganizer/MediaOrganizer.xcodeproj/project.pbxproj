@@ -26,10 +26,11 @@
 		FC5DD5B6289EADE400456566 /* image_tools.c in Sources */ = {isa = PBXBuildFile; fileRef = FC5DD5B5289EADE400456566 /* image_tools.c */; };
 		FC673FD32E5A575800CC2113 /* DownloadOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC673FD22E5A575800CC2113 /* DownloadOperation.swift */; };
 		FC78100D2967CD1400C0D641 /* ThumbnailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100C2967CD1400C0D641 /* ThumbnailViewModel.swift */; };
-		FC78100F2967D93E00C0D641 /* PhotoGridViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100E2967D93E00C0D641 /* PhotoGridViewModel.swift */; };
 		FC78DEA2295E5395009F3F27 /* UploadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA1295E5395009F3F27 /* UploadsView.swift */; };
 		FC78DEA4295E546B009F3F27 /* UploadsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */; };
 		FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */; };
+		FCAB123456789ABC /* PhotoGridItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAB123456789ABD /* PhotoGridItemView.swift */; };
+		FCAB123456789ABE /* ViewportTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAB123456789ABF /* ViewportTracker.swift */; };
 		FC78DEA82964AEA7009F3F27 /* View+onFrameChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */; };
 		FC9F21AD00000023 /* PhotosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000019 /* PhotosView.swift */; };
 		FC9F21AD00000024 /* EventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000020 /* EventsView.swift */; };
@@ -98,10 +99,11 @@
 		FC5DD5B5289EADE400456566 /* image_tools.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = image_tools.c; sourceTree = "<group>"; };
 		FC673FD22E5A575800CC2113 /* DownloadOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadOperation.swift; sourceTree = "<group>"; };
 		FC78100C2967CD1400C0D641 /* ThumbnailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailViewModel.swift; sourceTree = "<group>"; };
-		FC78100E2967D93E00C0D641 /* PhotoGridViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridViewModel.swift; sourceTree = "<group>"; };
 		FC78DEA1295E5395009F3F27 /* UploadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadsView.swift; sourceTree = "<group>"; };
 		FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadsViewModel.swift; sourceTree = "<group>"; };
 		FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
+		FCAB123456789ABD /* PhotoGridItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridItemView.swift; sourceTree = "<group>"; };
+		FCAB123456789ABF /* ViewportTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewportTracker.swift; sourceTree = "<group>"; };
 		FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+onFrameChange.swift"; sourceTree = "<group>"; };
 		FC9F21AD00000019 /* PhotosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosView.swift; sourceTree = "<group>"; };
 		FC9F21AD00000020 /* EventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsView.swift; sourceTree = "<group>"; };
@@ -322,7 +324,8 @@
 			isa = PBXGroup;
 			children = (
 				FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */,
-				FC78100E2967D93E00C0D641 /* PhotoGridViewModel.swift */,
+				FCAB123456789ABD /* PhotoGridItemView.swift */,
+				FCAB123456789ABF /* ViewportTracker.swift */,
 				FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */,
 			);
 			path = PhotoGrid;
@@ -615,6 +618,8 @@
 				FCFA10B828ACBC3B009A5A65 /* Persistence.swift in Sources */,
 				FCD57DEA295A68700050C6F0 /* MediaItemDetailView.swift in Sources */,
 				FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */,
+				FCAB123456789ABC /* PhotoGridItemView.swift in Sources */,
+				FCAB123456789ABE /* ViewportTracker.swift in Sources */,
 				FC39B92029577FCA003F3648 /* ThumbnailView.swift in Sources */,
 				FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */,
 				FC455E48296A1B730013E88E /* MediaItem.swift in Sources */,
@@ -625,7 +630,6 @@
 				FC455E4E296A8DE80013E88E /* DownloadManager.swift in Sources */,
 				FC78DEA2295E5395009F3F27 /* UploadsView.swift in Sources */,
 				FCF69761296BC7D600F2093D /* DownloadOverlayPanel.swift in Sources */,
-				FC78100F2967D93E00C0D641 /* PhotoGridViewModel.swift in Sources */,
 				FC455E4C296A83A40013E88E /* DownloadModel.swift in Sources */,
 				FC455E46296A0A4D0013E88E /* Tools.swift in Sources */,
 				FC9F21AD00000023 /* PhotosView.swift in Sources */,
