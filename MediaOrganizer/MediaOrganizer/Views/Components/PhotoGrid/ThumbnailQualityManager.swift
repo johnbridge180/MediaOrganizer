@@ -17,7 +17,7 @@ class ThumbnailQualityManager: ObservableObject {
     private var itemViewModels: [BSONObjectID: ThumbnailViewModel] = [:]
     private var lastQualityUpdate: Date = Date()
     
-    private let highResThreshold: CGFloat = 500
+    private var highResThreshold: CGFloat = 500
     private let qualityUpdateThrottle: TimeInterval = 0.1
     
     init(viewportTracker: ViewportTracker) {
@@ -122,7 +122,7 @@ class ThumbnailQualityManager: ObservableObject {
     }
     
     func setScrollVelocityThreshold(_ threshold: CGFloat) {
-        
+        highResThreshold = threshold
     }
     
     deinit {
