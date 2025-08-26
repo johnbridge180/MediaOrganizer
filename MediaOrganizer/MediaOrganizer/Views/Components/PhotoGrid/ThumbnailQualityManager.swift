@@ -101,16 +101,19 @@ class ThumbnailQualityManager: ObservableObject {
             position = .farOffscreen
         }
         
+        let isInPredictiveZone = viewportTracker.predictiveItems.contains(itemID)
         let targetQuality: Int
         
-        switch (position, scrollVelocity) {
-        case (.visible, let velocity) where velocity < 500:
+        switch (position, scrollVelocity, isInPredictiveZone) {
+        case (.visible, let velocity, _) where velocity < 500:
             targetQuality = 2
-        case (.visible, _):
+        case (.visible, _, _):
             targetQuality = 1
-        case (.nearVisible, _):
+        case (.nearVisible, _, _):
             targetQuality = 1
-        case (.farOffscreen, _):
+        case (.farOffscreen, _, true) where scrollVelocity < 300:
+            targetQuality = 1
+        case (.farOffscreen, _, _):
             targetQuality = 0
         }
         
