@@ -22,6 +22,7 @@ struct PhotoGridView: View {
     @StateObject var mediaVModel: MediaItemsViewModel
     @StateObject private var viewportTracker = ViewportTracker()
     @StateObject private var layoutManager = PhotoGridLayoutManager()
+    @StateObject private var qualityManager: ThumbnailQualityManager
 
     @State var selected: Set<BSONObjectID> = []
 
@@ -35,6 +36,10 @@ struct PhotoGridView: View {
         self._mediaVModel = StateObject(wrappedValue: mVmodel)
         self.scrollable = scrollable
         self.horizontalScroll = horizontalScroll
+        
+        let vTracker = ViewportTracker()
+        self._viewportTracker = StateObject(wrappedValue: vTracker)
+        self._qualityManager = StateObject(wrappedValue: ThumbnailQualityManager(viewportTracker: vTracker))
     }
 
     init(idealGridItemSize: Binding<Double>, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
@@ -52,6 +57,10 @@ struct PhotoGridView: View {
         self._mediaVModel = StateObject(wrappedValue: mVmodel)
         self.scrollable = scrollable
         self.horizontalScroll = horizontalScroll
+        
+        let vTracker = ViewportTracker()
+        self._viewportTracker = StateObject(wrappedValue: vTracker)
+        self._qualityManager = StateObject(wrappedValue: ThumbnailQualityManager(viewportTracker: vTracker))
     }
     
     var body: some View {
@@ -72,7 +81,8 @@ struct PhotoGridView: View {
                                     appDelegate: mediaVModel.appDelegate ?? AppDelegate(),
                                     isSelected: selected.contains(objectID),
                                     multiSelectMode: multiSelect,
-                                    viewportTracker: viewportTracker
+                                    viewportTracker: viewportTracker,
+                                    qualityManager: qualityManager
                                 ) {
                                     handleItemSelection(objectID)
                                 }
@@ -125,7 +135,8 @@ struct PhotoGridView: View {
                                 appDelegate: mediaVModel.appDelegate ?? AppDelegate(),
                                 isSelected: selected.contains(objectID),
                                 multiSelectMode: multiSelect,
-                                viewportTracker: viewportTracker
+                                viewportTracker: viewportTracker,
+                                qualityManager: qualityManager
                             ) {
                                 handleItemSelection(objectID)
                             }

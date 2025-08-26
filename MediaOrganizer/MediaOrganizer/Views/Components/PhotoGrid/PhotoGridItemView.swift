@@ -16,17 +16,19 @@ struct PhotoGridItemView: View {
     let multiSelectMode: Bool
     let onSelectionToggle: () -> Void
     let viewportTracker: ViewportTracker
+    let qualityManager: ThumbnailQualityManager
     
     @StateObject private var thumbnailViewModel: ThumbnailViewModel
     @State private var currentQuality: Int = 0
     
-    init(mediaItem: MediaItem, cacheRow: PreviewCache?, appDelegate: AppDelegate, isSelected: Bool, multiSelectMode: Bool, viewportTracker: ViewportTracker, onSelectionToggle: @escaping () -> Void) {
+    init(mediaItem: MediaItem, cacheRow: PreviewCache?, appDelegate: AppDelegate, isSelected: Bool, multiSelectMode: Bool, viewportTracker: ViewportTracker, qualityManager: ThumbnailQualityManager, onSelectionToggle: @escaping () -> Void) {
         self.mediaItem = mediaItem
         self.cacheRow = cacheRow
         self.appDelegate = appDelegate
         self.isSelected = isSelected
         self.multiSelectMode = multiSelectMode
         self.viewportTracker = viewportTracker
+        self.qualityManager = qualityManager
         self.onSelectionToggle = onSelectionToggle
         
         let makeCGImageQueue = DispatchQueue(label: "com.jbridge.makeCGImageQueue", qos: .background)
@@ -54,37 +56,11 @@ struct PhotoGridItemView: View {
                 DownloadManager.shared.download(mediaItem)
             }
         }
-        .onReceive(viewportTracker.$visibleItems) { _ in
-            updateThumbnailQuality()
+        .onAppear {
+            qualityManager.registerItem(mediaItem._id, viewModel: thumbnailViewModel)
         }
-        .onReceive(viewportTracker.$nearVisibleItems) { _ in
-            updateThumbnailQuality()
-        }
-        .onReceive(viewportTracker.$scrollVelocity) { _ in
-            updateThumbnailQuality()
-        }
-    }
-    
-    private func updateThumbnailQuality() {
-        let position = viewportTracker.getPositionFor(itemId: mediaItem._id)
-        let scrollVelocity = viewportTracker.scrollVelocity
-        
-        let targetQuality = calculateTargetQuality(position: position, scrollVelocity: scrollVelocity)
-        
-        if targetQuality != currentQuality {
-            currentQuality = targetQuality
-            thumbnailViewModel.setDisplayType(targetQuality)
-        }
-    }
-    
-    private func calculateTargetQuality(position: ViewportPosition, scrollVelocity: CGFloat) -> Int {
-        switch position {
-        case .visible:
-            return scrollVelocity > 500 ? 1 : 2
-        case .nearVisible:
-            return 1
-        case .farOffscreen:
-            return 0
+        .onDisappear {
+            qualityManager.unregisterItem(mediaItem._id)
         }
     }
 }
