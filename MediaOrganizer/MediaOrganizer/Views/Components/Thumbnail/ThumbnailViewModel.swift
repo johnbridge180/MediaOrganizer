@@ -125,9 +125,7 @@ class ThumbnailViewModel: ObservableObject {
         let savedURL = cacheURL.appendingPathComponent(item._id.hex + ".thumb." + fileExtension)
         cacheEntry.thumb_cached = true
         
-        try moveFileIfNeeded(from: fileURL, to: savedURL)
-        setImageIfNeeded(for: savedURL, type: 2)
-        try processTinyThumbnail(savedURL: savedURL, cacheURL: cacheURL, fileExtension: fileExtension, cacheEntry: cacheEntry)
+        try processCachedImage(from: fileURL, to: savedURL, cacheURL: cacheURL, fileExtension: fileExtension, cacheEntry: cacheEntry)
         
         cachedImageLocation = savedURL
         isCached = true
@@ -139,13 +137,16 @@ class ThumbnailViewModel: ObservableObject {
         let fileExt = cacheRow?.thumb_ext ?? "jpg"
         let savedURL = cacheURL.appendingPathComponent(item._id.hex + ".thumb." + fileExt)
         
-        try moveFileIfNeeded(from: fileURL, to: savedURL)
-        setImageIfNeeded(for: savedURL, type: 2)
+        try processCachedImage(from: fileURL, to: savedURL, cacheURL: cacheURL, fileExtension: fileExt, cacheEntry: cacheRow)
         cacheRow?.thumb_cached = true
         cachedImageLocation = savedURL
-        
-        try processTinyThumbnailForExisting(savedURL: savedURL, cacheURL: cacheURL, fileExt: fileExt)
         isCached = true
+    }
+    
+    private func processCachedImage(from sourceURL: URL, to destinationURL: URL, cacheURL: URL, fileExtension: String, cacheEntry: PreviewCache?) throws {
+        try moveFileIfNeeded(from: sourceURL, to: destinationURL)
+        setImageIfNeeded(for: destinationURL, type: 2)
+        try processTinyThumbnail(savedURL: destinationURL, cacheURL: cacheURL, fileExtension: fileExtension, cacheEntry: cacheEntry)
     }
     
     private func setupCacheEntry(_ cacheEntry: PreviewCache, fileExtension: String, response: URLResponse?, fileURL: URL) {
@@ -170,28 +171,23 @@ class ThumbnailViewModel: ObservableObject {
         }
     }
     
-    private func processTinyThumbnail(savedURL: URL, cacheURL: URL, fileExtension: String, cacheEntry: PreviewCache) throws {
+    private func processTinyThumbnail(savedURL: URL, cacheURL: URL, fileExtension: String, cacheEntry: PreviewCache?) throws {
         guard let tinyThumb = createTinyThumbnail(savedURL) else { return }
         
         let tinythumbURL = cacheURL.appendingPathComponent(item._id.hex + ".tiny." + fileExtension)
         try saveTinyThumbnail(tinyThumb, to: tinythumbURL)
         
-        cacheEntry.tiny_cached = true
-        cacheEntry.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
+        let fileSize = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
+        if let cacheEntry = cacheEntry {
+            cacheEntry.tiny_cached = true
+            cacheEntry.tiny_size = fileSize
+        } else {
+            cacheRow?.tiny_cached = true
+            cacheRow?.tiny_size = fileSize
+        }
+        
         tinythumbLocation = tinythumbURL
         setImageIfNeeded(for: tinythumbURL, type: 1)
-    }
-    
-    private func processTinyThumbnailForExisting(savedURL: URL, cacheURL: URL, fileExt: String) throws {
-        guard let tinyThumb = createTinyThumbnail(savedURL) else { return }
-        
-        let tinythumbURL = cacheURL.appendingPathComponent(item._id.hex + ".tiny." + fileExt)
-        try saveTinyThumbnail(tinyThumb, to: tinythumbURL)
-        
-        setImageIfNeeded(for: tinythumbURL, type: 1)
-        cacheRow?.tiny_cached = true
-        cacheRow?.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
-        tinythumbLocation = tinythumbURL
     }
     
     private func saveTinyThumbnail(_ tinyThumb: CGImage, to url: URL) throws {
