@@ -19,6 +19,19 @@ struct ExifData: Codable, Hashable {
     let focalLength: Double
     let aperture: Double
     let flip: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case width
+        case height
+        case make
+        case model
+        case shutterSpeed = "shutter_speed"
+        case isoSpeed = "iso_speed"
+        case lens
+        case focalLength = "focal_length"
+        case aperture
+        case flip
+    }
 }
 
 struct MediaItem: Codable, Hashable {
@@ -29,6 +42,16 @@ struct MediaItem: Codable, Hashable {
     let size: Int64
     let uploadComplete: Bool
     let exifData: ExifData
+
+    enum CodingKeys: String, CodingKey {
+        case _id
+        case time
+        case name
+        case uploadId = "upload_id"
+        case size
+        case uploadComplete = "upload_complete"
+        case exifData = "exif_data"
+    }
 
     func getDisplayDimensions() -> (width: Int, height: Int) {
         if self.exifData.flip >= 5 {
