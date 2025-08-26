@@ -33,35 +33,17 @@ struct PhotoGridView: View {
     @State var dragStart: CGPoint = CGPoint()
     @State var dragEnd: CGPoint = CGPoint()
 
-    init(idealGridItemSize: Binding<Double>, multiSelect: Binding<Bool>, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
-        self._idealGridItemSize=idealGridItemSize
-        self._multiSelect=multiSelect
-        self.minGridItemSize=minGridItemSize
-        self.limit=limit
-        self.filter=filter
+    init(idealGridItemSize: Binding<Double>, multiSelect: Binding<Bool>? = nil, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
+        self._idealGridItemSize = idealGridItemSize
+        self._multiSelect = multiSelect ?? Binding(get: { false }, set: { _ in })
+        self.minGridItemSize = minGridItemSize
+        self.limit = limit
+        self.filter = filter
         let mVmodel = MediaItemsViewModel(mongoHolder: mongoHolder, moc: PersistenceController.shared.container.viewContext, appDelegate: appDelegate)
-        self._mediaVModel=StateObject(wrappedValue: mVmodel)
-        self.scrollable=scrollable
-        self.horizontalScroll=horizontalScroll
-        self._gridViewModel=StateObject(wrappedValue: PhotoGridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
-    }
-
-    init(idealGridItemSize: Binding<Double>, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
-        let multiSelect: Binding<Bool> = Binding {
-            false
-        } set: { _ in
-
-        }
-        self._idealGridItemSize=idealGridItemSize
-        self._multiSelect=multiSelect
-        self.minGridItemSize=minGridItemSize
-        self.limit=limit
-        self.filter=filter
-        let mVmodel = MediaItemsViewModel(mongoHolder: mongoHolder, moc: PersistenceController.shared.container.viewContext, appDelegate: appDelegate)
-        self._mediaVModel=StateObject(wrappedValue: mVmodel)
-        self.scrollable=scrollable
-        self.horizontalScroll=horizontalScroll
-        self._gridViewModel=StateObject(wrappedValue: PhotoGridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
+        self._mediaVModel = StateObject(wrappedValue: mVmodel)
+        self.scrollable = scrollable
+        self.horizontalScroll = horizontalScroll
+        self._gridViewModel = StateObject(wrappedValue: PhotoGridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
     }
 
     var body: some View {
