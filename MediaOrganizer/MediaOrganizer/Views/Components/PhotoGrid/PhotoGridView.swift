@@ -68,7 +68,7 @@ struct PhotoGridView: View {
             let columnCount = max(1, Int(geometry.size.width / idealGridItemSize))
             let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: columnCount)
             
-            let _ = updateLayout(geometry: geometry)
+            _ = updateLayout(geometry: geometry)
             
             if scrollable {
                 ScrollView(horizontalScroll ? .horizontal : .vertical, showsIndicators: true) {
@@ -264,6 +264,8 @@ struct PhotoGridView: View {
     }
     
     private func handleVisibleItemsChange(_ visibleItems: [VisibleItem], scrollViewFrame: CGRect) {
+        let scrollOffset = scrollViewFrame.minY
+        viewportTracker.updateScrollVelocity(scrollOffset: scrollOffset)
         viewportTracker.updateVisibleItems(visibleItems, scrollViewFrame: scrollViewFrame)
     }
 }

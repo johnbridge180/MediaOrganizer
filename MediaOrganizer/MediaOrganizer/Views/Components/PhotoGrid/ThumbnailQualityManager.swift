@@ -88,13 +88,39 @@ class ThumbnailQualityManager: ObservableObject {
         nearVisible: Set<BSONObjectID>,
         isScrollingFast: Bool
     ) -> Int {
-        if visible.contains(itemId) {
-            return isScrollingFast ? 1 : 2
-        } else if nearVisible.contains(itemId) {
-            return 1
+        return updateItemQuality(itemId, visible: visible, nearVisible: nearVisible, scrollVelocity: viewportTracker.scrollVelocity)
+    }
+    
+    private func updateItemQuality(_ itemID: BSONObjectID, visible: Set<BSONObjectID>, nearVisible: Set<BSONObjectID>, scrollVelocity: CGFloat) -> Int {
+        let position: ViewportPosition
+        if visible.contains(itemID) {
+            position = .visible
+        } else if nearVisible.contains(itemID) {
+            position = .nearVisible
         } else {
-            return 0
+            position = .farOffscreen
         }
+        
+        let targetQuality: Int
+        
+        switch (position, scrollVelocity) {
+        case (.visible, let velocity) where velocity < 500:
+            targetQuality = 2
+        case (.visible, _):
+            targetQuality = 1
+        case (.nearVisible, _):
+            targetQuality = 1
+        case (.farOffscreen, _):
+            targetQuality = 0
+        }
+        
+        return targetQuality
+    }
+    
+    private enum ViewportPosition {
+        case visible
+        case nearVisible
+        case farOffscreen
     }
     
     private func cleanupUnregisteredItems(knownItems: Set<BSONObjectID>) {
