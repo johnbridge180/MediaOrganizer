@@ -21,6 +21,7 @@ struct PhotoGridView: View {
 
     @StateObject var mediaVModel: MediaItemsViewModel
     @StateObject private var viewportTracker = ViewportTracker()
+    @StateObject private var layoutManager = PhotoGridLayoutManager()
 
     @State var selected: Set<BSONObjectID> = []
 
@@ -58,6 +59,8 @@ struct PhotoGridView: View {
             let columnCount = max(1, Int(geometry.size.width / idealGridItemSize))
             let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: columnCount)
             
+            let _ = updateLayout(geometry: geometry)
+            
             if scrollable {
                 ScrollView(horizontalScroll ? .horizontal : .vertical, showsIndicators: true) {
                     LazyVGrid(columns: columns, spacing: 1) {
@@ -73,7 +76,10 @@ struct PhotoGridView: View {
                                 ) {
                                     handleItemSelection(objectID)
                                 }
-                                .aspectRatio(calculateAspectRatio(for: item.item), contentMode: .fit)
+                                .frame(
+                                    width: layoutManager.getItemWidth(itemId: objectID),
+                                    height: layoutManager.getRowHeight(for: objectID)
+                                )
                                 .contextMenu {
                                     if selected.contains(objectID) && selected.count > 1 {
                                         Button("Download \(selected.count) items") {
@@ -108,7 +114,10 @@ struct PhotoGridView: View {
                             ) {
                                 handleItemSelection(objectID)
                             }
-                            .aspectRatio(calculateAspectRatio(for: item.item), contentMode: .fit)
+                            .frame(
+                                width: layoutManager.getItemWidth(itemId: objectID),
+                                height: layoutManager.getRowHeight(for: objectID)
+                            )
                             .contextMenu {
                                 if selected.contains(objectID) && selected.count > 1 {
                                     Button("Download \(selected.count) items") {
@@ -134,6 +143,12 @@ struct PhotoGridView: View {
             if !newValue {
                 selected = []
             }
+        }
+        .onChange(of: mediaVModel.itemOrder) { _ in
+            updateLayout(geometry: nil)
+        }
+        .onChange(of: idealGridItemSize) { _ in
+            updateLayout(geometry: nil)
         }
         .onAppear {
             Task {
@@ -193,6 +208,18 @@ struct PhotoGridView: View {
         let aspectRatio = Double(dimensions.width) / Double(dimensions.height)
         
         return max(0.5, min(2.0, aspectRatio))
+    }
+    
+    private func updateLayout(geometry: GeometryProxy?) {
+        let containerWidth = geometry?.size.width ?? 800
+        
+        DispatchQueue.main.async {
+            self.layoutManager.calculateLayout(
+                items: self.mediaVModel.items,
+                itemOrder: self.mediaVModel.itemOrder,
+                containerWidth: containerWidth
+            )
+        }
     }
 }
 
