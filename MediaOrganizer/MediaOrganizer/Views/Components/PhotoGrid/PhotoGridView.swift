@@ -59,45 +59,7 @@ struct PhotoGridView: View {
                             mediaVModel.items[object]?.view
                             if self.multiSelect {
                                 Button {
-                                    if NSEvent.modifierFlags.contains(.shift) && !self.selected.isEmpty {
-                                        guard let index = mediaVModel.itemOrder.firstIndex(of: item.item._id) else { return }
-                                        var i = index-1
-                                        var closestLeftIndex = -1
-                                        while i >= 0 {
-                                            if self.selected[mediaVModel.itemOrder[i]] != nil {
-                                                closestLeftIndex = i
-                                                break
-                                            }
-                                            i -= 1
-                                        }
-                                        i = index + 1
-                                        var closestRightIndex = -1
-                                        while i<mediaVModel.itemOrder.count {
-                                            if self.selected[mediaVModel.itemOrder[i]] != nil {
-                                                closestRightIndex = i
-                                                break
-                                            }
-                                            i += 1
-                                        }
-
-                                        if closestLeftIndex == -1 || (closestRightIndex != -1 && closestRightIndex-index < index-closestLeftIndex) {
-                                            for k in (index+1)...closestRightIndex {
-                                                self.selected[mediaVModel.itemOrder[k]] = true
-                                            }
-                                        } else {
-                                            for k in closestLeftIndex...(index-1) {
-                                                self.selected[mediaVModel.itemOrder[k]] = true
-                                            }
-                                        }
-                                        self.selected[item.item._id] = true
-                                    } else {
-                                        if self.selected[item.item._id] == nil {
-                                            self.selected[item.item._id] = true
-                                        } else {
-                                            self.selected.removeValue(forKey: item.item._id)
-                                        }
-                                    }
-
+                                    handleItemSelection(for: item.item._id)
                                 } label: {
                                     Image(systemName: selected[item.item._id] ?? false ? "checkmark.circle.fill" : "circle")
                                         .font(.system(size: 180 < gridViewModel.photoWidth ? 60 : gridViewModel.photoWidth/3.0))
@@ -222,6 +184,54 @@ struct PhotoGridView: View {
             }
         }
         .frame(minWidth: 300, minHeight: scrollable ? 0 : gridViewModel.zstackHeight)
+    }
+    
+    private func handleItemSelection(for itemId: BSONObjectID) {
+        if NSEvent.modifierFlags.contains(.shift) && !selected.isEmpty {
+            handleShiftSelection(for: itemId)
+        } else {
+            toggleItemSelection(for: itemId)
+        }
+    }
+    
+    private func handleShiftSelection(for itemId: BSONObjectID) {
+        guard let index = mediaVModel.itemOrder.firstIndex(of: itemId) else { return }
+        
+        let closestLeftIndex = findClosestSelectedIndex(from: index, direction: -1)
+        let closestRightIndex = findClosestSelectedIndex(from: index, direction: 1)
+        
+        if closestLeftIndex == -1 || (closestRightIndex != -1 && closestRightIndex - index < index - closestLeftIndex) {
+            selectRange(from: index + 1, to: closestRightIndex)
+        } else {
+            selectRange(from: closestLeftIndex, to: index - 1)
+        }
+        selected[itemId] = true
+    }
+    
+    private func findClosestSelectedIndex(from startIndex: Int, direction: Int) -> Int {
+        var i = startIndex + direction
+        while i >= 0 && i < mediaVModel.itemOrder.count {
+            if selected[mediaVModel.itemOrder[i]] != nil {
+                return i
+            }
+            i += direction
+        }
+        return -1
+    }
+    
+    private func selectRange(from start: Int, to end: Int) {
+        guard start >= 0 && end < mediaVModel.itemOrder.count && start <= end else { return }
+        for k in start...end {
+            selected[mediaVModel.itemOrder[k]] = true
+        }
+    }
+    
+    private func toggleItemSelection(for itemId: BSONObjectID) {
+        if selected[itemId] == nil {
+            selected[itemId] = true
+        } else {
+            selected.removeValue(forKey: itemId)
+        }
     }
 }
 
