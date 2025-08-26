@@ -1,1 +1,2 @@
 - The swiftlint configuration is located at `./MediaOrganizer/.swiftlint.yml`. Never run swiftlint without being sure that it is referencing this configuration file
+- Use `xcodebuild -scheme MediaOrganizer -configuration Debug build` inside the XCode project directory for building the swift project
