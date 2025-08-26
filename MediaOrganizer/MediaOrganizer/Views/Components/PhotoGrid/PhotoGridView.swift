@@ -73,7 +73,7 @@ struct PhotoGridView: View {
                                 ) {
                                     handleItemSelection(objectID)
                                 }
-                                .aspectRatio(1, contentMode: .fit)
+                                .aspectRatio(calculateAspectRatio(for: item.item), contentMode: .fit)
                                 .contextMenu {
                                     if selected.contains(objectID) && selected.count > 1 {
                                         Button("Download \(selected.count) items") {
@@ -108,7 +108,7 @@ struct PhotoGridView: View {
                             ) {
                                 handleItemSelection(objectID)
                             }
-                            .aspectRatio(1, contentMode: .fit)
+                            .aspectRatio(calculateAspectRatio(for: item.item), contentMode: .fit)
                             .contextMenu {
                                 if selected.contains(objectID) && selected.count > 1 {
                                     Button("Download \(selected.count) items") {
@@ -186,6 +186,13 @@ struct PhotoGridView: View {
         for index in range {
             selected.insert(mediaVModel.itemOrder[index])
         }
+    }
+    
+    private func calculateAspectRatio(for mediaItem: MediaItem) -> Double {
+        let dimensions = mediaItem.getDisplayDimensions()
+        let aspectRatio = Double(dimensions.width) / Double(dimensions.height)
+        
+        return max(0.5, min(2.0, aspectRatio))
     }
 }
 
