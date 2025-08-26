@@ -14,7 +14,7 @@ class MediaItemsViewModel: ObservableObject {
 
     let mongoHolder: MongoClientHolder
     let moc: NSManagedObjectContext
-    let appDelegate: AppDelegate
+    weak var appDelegate: AppDelegate?
 
     let updateTypeQueue: DispatchQueue
     let makeCGImageQueue: DispatchQueue
@@ -46,7 +46,8 @@ class MediaItemsViewModel: ObservableObject {
         if mongoHolder.client==nil {
             await mongoHolder.connect()
         }
-        let filesCollection = mongoHolder.client!.db("media_organizer").collection("files")
+        guard let client = mongoHolder.client else { return }
+        let filesCollection = client.db("media_organizer").collection("files")
         var options = FindOptions(sort: ["time": -1])
         if limit>0 {
             options = FindOptions(limit: limit, sort: ["time": -1, "_id": -1])
@@ -62,7 +63,9 @@ class MediaItemsViewModel: ObservableObject {
                     let cacheRow = (!cacheRows.isEmpty ? (cacheRows[0] as? PreviewCache) : nil)
                     let itemVModel = ThumbnailViewModel(item, cacheRow: cacheRow, makeCGImageQueue: makeCGImageQueue)
                     self.itemVModels[item._id]=itemVModel
-                    self.items[item._id]=MediaItemHolder(item: item, cacheRow: cacheRow, view: ThumbnailView(appDelegate: appDelegate, thumbVModel: itemVModel))
+                    if let appDelegate = appDelegate {
+                        self.items[item._id]=MediaItemHolder(item: item, cacheRow: cacheRow, view: ThumbnailView(appDelegate: appDelegate, thumbVModel: itemVModel))
+                    }
                 }
                 newItemOrder.append(item._id)
             }
@@ -138,10 +141,8 @@ class MediaItemsViewModel: ObservableObject {
                 bigthumbIndexRange=bigthumbIndexRange.clamped(to: 0...(itemOrder.count-1))
                 self.setStatus(for: Array(itemOrder[bigthumbIndexRange]), status: 2)
                 var tinyThumbOrder: [BSONObjectID] = []
-                for i in 0..<itemOrder.count {
-                    if !bigthumbIndexRange.contains(i) {
-                        tinyThumbOrder.append(itemOrder[i])
-                    }
+                for i in 0..<itemOrder.count where !bigthumbIndexRange.contains(i) {
+                    tinyThumbOrder.append(itemOrder[i])
                 }
                 self.setStatus(for: tinyThumbOrder, status: 1)
             } else {

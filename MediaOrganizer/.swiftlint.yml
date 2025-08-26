@@ -35,13 +35,16 @@ opt_in_rules:
   - unused_optional_binding       # Catch unused optional bindings
   
   # Code Style (Non-formatting)
-  - explicit_self                 # Consistency in self usage
   - redundant_void_return         # Remove unnecessary void returns
   - redundant_optional_initialization  # Remove redundant optional initialization
   - unneeded_parentheses_in_closure_argument  # Remove unnecessary parentheses
   
   # SwiftUI Specific
   - multiple_closures_with_trailing_closure  # SwiftUI trailing closure style
+
+# Analyzer rules
+analyzer_rules:
+  - explicit_self                 # Consistency in self usage
 
 # Excluded directories
 excluded:

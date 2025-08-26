@@ -1,0 +1,1 @@
+- The swiftlint configuration is located at `./MediaOrganizer/.swiftlint.yml`. Never run swiftlint without being sure that it is referencing this configuration file

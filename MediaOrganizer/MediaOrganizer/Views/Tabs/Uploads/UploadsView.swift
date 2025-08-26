@@ -86,7 +86,8 @@ struct UploadsView: View {
                                         Menu {
                                             Button("Download") {
                                                 Task {
-                                                    for try await doc in try await mongoHolder.client!.db("media_organizer").collection("files").find(["upload_id": BSON.objectID(upload._id)], options: FindOptions(sort: ["time": -1])) {
+                                                    guard let client = mongoHolder.client else { return }
+                                                    for try await doc in try await client.db("media_organizer").collection("files").find(["upload_id": BSON.objectID(upload._id)], options: FindOptions(sort: ["time": -1])) {
                                                         if let item: MediaItem = try? BSONDecoder().decode(MediaItem.self, from: doc) {
                                                             DownloadManager.shared.download(item)
                                                         }

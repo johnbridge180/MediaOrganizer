@@ -78,7 +78,7 @@ struct PhotoGridView: View {
                             if self.multiSelect {
                                 Button {
                                     if NSEvent.modifierFlags.contains(.shift) && !self.selected.isEmpty {
-                                        let index = mediaVModel.itemOrder.firstIndex(of: item.item._id)!
+                                        guard let index = mediaVModel.itemOrder.firstIndex(of: item.item._id) else { return }
                                         var i = index-1
                                         var closestLeftIndex = -1
                                         while i >= 0 {
@@ -136,9 +136,9 @@ struct PhotoGridView: View {
                         .contextMenu {
                             if self.selected[item.item._id] == true {
                                 Button("Download \(self.selected.count) items") {
-                                    for (key, value) in self.selected {
-                                        if value {
-                                            DownloadManager.shared.download(self.mediaVModel.items[key]!.item)
+                                    for (key, value) in self.selected where value {
+                                        if let mediaItem = self.mediaVModel.items[key] {
+                                            DownloadManager.shared.download(mediaItem.item)
                                         }
                                     }
                                 }

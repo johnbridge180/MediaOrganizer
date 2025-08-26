@@ -20,7 +20,7 @@ class MongoClientHolder: ObservableObject {
         do {
             print(mongodbUrl)
             client = try MongoClient(mongodbUrl, using: elg)
-            db = client!.db("media_organizer")
+            db = client?.db("media_organizer")
         } catch {
             print("Error connecting to MongoDB")
         }

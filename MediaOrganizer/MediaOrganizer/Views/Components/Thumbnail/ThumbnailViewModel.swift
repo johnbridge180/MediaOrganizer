@@ -77,92 +77,123 @@ class ThumbnailViewModel: ObservableObject {
         return type
     }
     func checkCache() {
-        if isCached==false {
-            if let url = URL(string: apiEndpointUrl+"?request=thumbnail&oid="+item._id.hex) {
-                let downloadTask = URLSession.shared.downloadTask(with: url) {
-                    url, response, error in
-                    // check for and handle errors:
-                    // * error should be nil
-                    // * response should be an HTTPURLResponse with statusCode in 200..<299
-
-                    guard let fileURL = url else { return }
-                    do {
-                        let cacheURL = try
-                        FileManager.default.url(for: .cachesDirectory,
-                                                in: .userDomainMask,
-                                                appropriateFor: nil,
-                                                create: true)
-                        if self.cacheRow==nil {
-                            let fileExtension = "jpg"
-                            let cacheEntry: PreviewCache = PreviewCache(context: PersistenceController.shared.container.viewContext)
-                            cacheEntry.oid_hex=self.item._id.hex
-                            cacheEntry.thumb_ext=fileExtension
-                            cacheEntry.thumb_size=response?.expectedContentLength ?? Int64((try? url?.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
-                            cacheEntry.last_accessed=Date()
-                            cacheEntry.preview_cached=false
-                            cacheEntry.preview_size=0
-                            cacheEntry.prev_ext=fileExtension
-                            let savedURL = cacheURL.appendingPathComponent(self.item._id.hex+".thumb."+fileExtension)
-                            cacheEntry.thumb_cached=true
-                            if !FileManager.default.fileExists(atPath: savedURL.path) {
-                                try FileManager.default.moveItem(at: fileURL, to: savedURL)
-                            }
-                            if self.type==2 {
-                                self.setImage(from: savedURL)
-                            }
-                            if let tinyThumb: CGImage = self.createTinyThumbnail(savedURL) {
-                                let tinythumbURL = cacheURL.appendingPathComponent(self.item._id.hex+".tiny."+fileExtension)
-                                let ciimage = CIImage(cgImage: tinyThumb)
-                                let cicontext = CIContext()
-                                if let colorspace = ciimage.colorSpace ?? CGColorSpace(name: CGColorSpace.dcip3) {
-                                    try cicontext.writeJPEGRepresentation(of: ciimage, to: tinythumbURL, colorSpace: colorspace)
-                                    cacheEntry.tiny_cached = true
-                                    cacheEntry.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
-                                    self.tinythumbLocation=tinythumbURL
-                                    if self.type==1 {
-                                        self.setImage(from: tinythumbURL)
-                                    }
-                                }
-                            }
-                            self.cachedImageLocation=savedURL
-                            self.isCached=true
-                            self.cacheRow=cacheEntry
-                        } else {
-                            self.cacheRow?.last_accessed=Date()
-                            let savedURL = cacheURL.appendingPathComponent(self.item._id.hex+".thumb."+(self.cacheRow?.thumb_ext ?? "jpg"))
-                            if !FileManager.default.fileExists(atPath: savedURL.path) {
-                                try FileManager.default.moveItem(at: fileURL, to: savedURL)
-                            }
-                            if self.type==2 {
-                                self.setImage(from: savedURL)
-                            }
-                            self.cacheRow?.thumb_cached=true
-                            self.cachedImageLocation=savedURL
-                            if let tinyThumb: CGImage = self.createTinyThumbnail(savedURL) {
-                                let tinythumbURL = cacheURL.appendingPathComponent(self.item._id.hex+".tiny."+(self.cacheRow?.thumb_ext ?? "jpg"))
-                                let ciimage = CIImage(cgImage: tinyThumb)
-                                let cicontext = CIContext()
-                                if let colorspace = ciimage.colorSpace ?? CGColorSpace(name: CGColorSpace.dcip3) {
-                                    try cicontext.writeJPEGRepresentation(of: ciimage, to: tinythumbURL, colorSpace: colorspace)
-                                    if self.type==1 {
-                                        self.setImage(from: tinythumbURL)
-                                    }
-                                    self.cacheRow?.tiny_cached = true
-                                    self.cacheRow?.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
-                                    self.tinythumbLocation=tinythumbURL
-                                }
-                            }
-                            self.isCached=true
-                        }
-                        DispatchQueue.main.async {
-                            self.objectWillChange.send()
-                        }
-                    } catch {
-                        print("file error: \(error)")
-                    }
-                }
-                downloadTask.resume()
+        guard !isCached else { return }
+        guard let url = URL(string: apiEndpointUrl+"?request=thumbnail&oid="+item._id.hex) else { return }
+        
+        let downloadTask = URLSession.shared.downloadTask(with: url) { url, response, error in
+            self.handleDownloadCompletion(url: url, response: response, error: error)
+        }
+        downloadTask.resume()
+    }
+    
+    private func handleDownloadCompletion(url: URL?, response: URLResponse?, error: Error?) {
+        guard let fileURL = url else { return }
+        do {
+            let cacheURL = try FileManager.default.url(
+                for: .cachesDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
+            
+            if cacheRow == nil {
+                try createNewCacheEntry(fileURL: fileURL, cacheURL: cacheURL, response: response)
+            } else {
+                try updateExistingCacheEntry(fileURL: fileURL, cacheURL: cacheURL)
             }
+            
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        } catch {
+            print("file error: \(error)")
+        }
+    }
+    
+    private func createNewCacheEntry(fileURL: URL, cacheURL: URL, response: URLResponse?) throws {
+        let fileExtension = "jpg"
+        let cacheEntry = PreviewCache(context: PersistenceController.shared.container.viewContext)
+        setupCacheEntry(cacheEntry, fileExtension: fileExtension, response: response, fileURL: fileURL)
+        
+        let savedURL = cacheURL.appendingPathComponent(item._id.hex + ".thumb." + fileExtension)
+        cacheEntry.thumb_cached = true
+        
+        try moveFileIfNeeded(from: fileURL, to: savedURL)
+        setImageIfNeeded(for: savedURL, type: 2)
+        try processTinyThumbnail(savedURL: savedURL, cacheURL: cacheURL, fileExtension: fileExtension, cacheEntry: cacheEntry)
+        
+        cachedImageLocation = savedURL
+        isCached = true
+        self.cacheRow = cacheEntry
+    }
+    
+    private func updateExistingCacheEntry(fileURL: URL, cacheURL: URL) throws {
+        cacheRow?.last_accessed = Date()
+        let fileExt = cacheRow?.thumb_ext ?? "jpg"
+        let savedURL = cacheURL.appendingPathComponent(item._id.hex + ".thumb." + fileExt)
+        
+        try moveFileIfNeeded(from: fileURL, to: savedURL)
+        setImageIfNeeded(for: savedURL, type: 2)
+        cacheRow?.thumb_cached = true
+        cachedImageLocation = savedURL
+        
+        try processTinyThumbnailForExisting(savedURL: savedURL, cacheURL: cacheURL, fileExt: fileExt)
+        isCached = true
+    }
+    
+    private func setupCacheEntry(_ cacheEntry: PreviewCache, fileExtension: String, response: URLResponse?, fileURL: URL) {
+        cacheEntry.oid_hex = item._id.hex
+        cacheEntry.thumb_ext = fileExtension
+        cacheEntry.thumb_size = response?.expectedContentLength ?? Int64((try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        cacheEntry.last_accessed = Date()
+        cacheEntry.preview_cached = false
+        cacheEntry.preview_size = 0
+        cacheEntry.prev_ext = fileExtension
+    }
+    
+    private func moveFileIfNeeded(from source: URL, to destination: URL) throws {
+        if !FileManager.default.fileExists(atPath: destination.path) {
+            try FileManager.default.moveItem(at: source, to: destination)
+        }
+    }
+    
+    private func setImageIfNeeded(for url: URL, type: Int) {
+        if self.type == type {
+            setImage(from: url)
+        }
+    }
+    
+    private func processTinyThumbnail(savedURL: URL, cacheURL: URL, fileExtension: String, cacheEntry: PreviewCache) throws {
+        guard let tinyThumb = createTinyThumbnail(savedURL) else { return }
+        
+        let tinythumbURL = cacheURL.appendingPathComponent(item._id.hex + ".tiny." + fileExtension)
+        try saveTinyThumbnail(tinyThumb, to: tinythumbURL)
+        
+        cacheEntry.tiny_cached = true
+        cacheEntry.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
+        tinythumbLocation = tinythumbURL
+        setImageIfNeeded(for: tinythumbURL, type: 1)
+    }
+    
+    private func processTinyThumbnailForExisting(savedURL: URL, cacheURL: URL, fileExt: String) throws {
+        guard let tinyThumb = createTinyThumbnail(savedURL) else { return }
+        
+        let tinythumbURL = cacheURL.appendingPathComponent(item._id.hex + ".tiny." + fileExt)
+        try saveTinyThumbnail(tinyThumb, to: tinythumbURL)
+        
+        setImageIfNeeded(for: tinythumbURL, type: 1)
+        cacheRow?.tiny_cached = true
+        cacheRow?.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
+        tinythumbLocation = tinythumbURL
+    }
+    
+    private func saveTinyThumbnail(_ tinyThumb: CGImage, to url: URL) throws {
+        let ciimage = CIImage(cgImage: tinyThumb)
+        let cicontext = CIContext()
+        let colorspace = ciimage.colorSpace ?? CGColorSpace(name: CGColorSpace.dcip3)
+        
+        if let colorspace = colorspace {
+            try cicontext.writeJPEGRepresentation(of: ciimage, to: url, colorSpace: colorspace)
         }
     }
     // credit: https://medium.com/@zippicoder/downsampling-images-for-better-memory-consumption-and-uicollectionview-performance-35e0b4526425
