@@ -13,7 +13,6 @@ struct ThumbnailView: View {
     @AppStorage("api_endpoint_url") private var apiEndpointUrl: String = ""
 
     var appDelegate: AppDelegate
-    // TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
     @ObservedObject var thumbVModel: ThumbnailViewModel
 
     init(appDelegate: AppDelegate, thumbVModel: ThumbnailViewModel) {
