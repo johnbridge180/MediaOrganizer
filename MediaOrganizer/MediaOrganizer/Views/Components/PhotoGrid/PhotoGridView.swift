@@ -80,6 +80,17 @@ struct PhotoGridView: View {
                                     width: layoutManager.getItemWidth(itemId: objectID),
                                     height: layoutManager.getRowHeight(for: objectID)
                                 )
+                                .background(
+                                    GeometryReader { itemGeometry in
+                                        Color.clear.preference(
+                                            key: VisibleItemsPreference.self,
+                                            value: [VisibleItem(
+                                                id: objectID,
+                                                frame: itemGeometry.frame(in: .named("scrollView"))
+                                            )]
+                                        )
+                                    }
+                                )
                                 .contextMenu {
                                     if selected.contains(objectID) && selected.count > 1 {
                                         Button("Download \(selected.count) items") {
@@ -100,6 +111,10 @@ struct PhotoGridView: View {
                     }
                     .padding(.horizontal, 1)
                 }
+                .coordinateSpace(name: "scrollView")
+                .onPreferenceChange(VisibleItemsPreference.self) { visibleItems in
+                    handleVisibleItemsChange(visibleItems, scrollViewFrame: geometry.frame(in: .global))
+                }
             } else {
                 LazyVGrid(columns: columns, spacing: 1) {
                     ForEach(mediaVModel.itemOrder, id: \.hex) { objectID in
@@ -117,6 +132,17 @@ struct PhotoGridView: View {
                             .frame(
                                 width: layoutManager.getItemWidth(itemId: objectID),
                                 height: layoutManager.getRowHeight(for: objectID)
+                            )
+                            .background(
+                                GeometryReader { itemGeometry in
+                                    Color.clear.preference(
+                                        key: VisibleItemsPreference.self,
+                                        value: [VisibleItem(
+                                            id: objectID,
+                                            frame: itemGeometry.frame(in: .named("scrollView"))
+                                        )]
+                                    )
+                                }
                             )
                             .contextMenu {
                                 if selected.contains(objectID) && selected.count > 1 {
@@ -137,6 +163,10 @@ struct PhotoGridView: View {
                     }
                 }
                 .padding(.horizontal, 1)
+                .coordinateSpace(name: "scrollView")
+                .onPreferenceChange(VisibleItemsPreference.self) { visibleItems in
+                    handleVisibleItemsChange(visibleItems, scrollViewFrame: geometry.frame(in: .global))
+                }
             }
         }
         .onChange(of: multiSelect) { newValue in
@@ -220,6 +250,10 @@ struct PhotoGridView: View {
                 containerWidth: containerWidth
             )
         }
+    }
+    
+    private func handleVisibleItemsChange(_ visibleItems: [VisibleItem], scrollViewFrame: CGRect) {
+        viewportTracker.updateVisibleItems(visibleItems, scrollViewFrame: scrollViewFrame)
     }
 }
 
