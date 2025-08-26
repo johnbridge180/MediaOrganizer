@@ -62,7 +62,7 @@ struct PhotoGridView: View {
                                     handleItemSelection(for: item.item._id)
                                 } label: {
                                     Image(systemName: selected[item.item._id] ?? false ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 180 < gridViewModel.photoWidth ? 60 : gridViewModel.photoWidth/3.0))
+                                        .font(.system(size: ThumbnailViewModel.Constants.largeIconThreshold < gridViewModel.photoWidth ? ThumbnailViewModel.Constants.largeIconSize : gridViewModel.photoWidth/ThumbnailViewModel.Constants.iconSizeDivider))
                                         .padding()
                                         .frame(
                                             width: dimensions.width >= dimensions.height ?

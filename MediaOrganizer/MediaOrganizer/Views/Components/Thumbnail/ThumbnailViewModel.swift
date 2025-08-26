@@ -9,6 +9,13 @@ import SwiftUI
 
 class ThumbnailViewModel: ObservableObject {
     @AppStorage("api_endpoint_url") private var apiEndpointUrl: String = ""
+    
+    enum Constants {
+        static let tinyThumbnailWidth: CGFloat = 100.0
+        static let largeIconThreshold: CGFloat = 180.0
+        static let largeIconSize: CGFloat = 60.0
+        static let iconSizeDivider: CGFloat = 3.0
+    }
 
     var imageView: Image?
     var cgImage: CGImage?
@@ -199,13 +206,11 @@ class ThumbnailViewModel: ObservableObject {
     // credit: https://medium.com/@zippicoder/downsampling-images-for-better-memory-consumption-and-uicollectionview-performance-35e0b4526425
     func createTinyThumbnail(_ url: URL) -> CGImage? {
 
-        let tinyThumbnailWidth: CGFloat = 100.0
-
         let imageSourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, imageSourceOptions) else {
             return nil
         }
-        let maxDimensionInPixels = max(tinyThumbnailWidth, tinyThumbnailWidth) * (NSScreen.main?.backingScaleFactor ?? 1)
+        let maxDimensionInPixels = max(Constants.tinyThumbnailWidth, Constants.tinyThumbnailWidth) * (NSScreen.main?.backingScaleFactor ?? 1)
 
         let downsampleOptions = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,

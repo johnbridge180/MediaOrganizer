@@ -11,6 +11,11 @@ import CoreData
 
 class MediaItemsViewModel: ObservableObject {
     static let lowresTriggerWidth = 100.0
+    
+    private enum Constants {
+        static let scrollUpdateDelay: Double = 0.2
+        static let resizeUpdateDelay: Double = 0.5
+    }
 
     let mongoHolder: MongoClientHolder
     let moc: NSManagedObjectContext
@@ -110,7 +115,7 @@ class MediaItemsViewModel: ObservableObject {
         let lastResizeUpdate=self.lastResizeUpdate
         self.lastScrollFrameUpdate = lastScrollFrameUpdate
         // might want to use NSOperationQueue later (slightly less wasteful of CPU resources maybe?)
-        self.updateTypeQueue.asyncAfter(deadline: .now()+0.2) {
+        self.updateTypeQueue.asyncAfter(deadline: .now() + Constants.scrollUpdateDelay) {
             if self.lastScrollFrameUpdate==lastScrollFrameUpdate && self.lastResizeUpdate==lastResizeUpdate {
                 self.setRangeValues(isScrollUpdate: true, zstackOriginY: frame.origin.y, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
             }
@@ -120,7 +125,7 @@ class MediaItemsViewModel: ObservableObject {
     func updateRangeValuesForResize(width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
         let lastResizeUpdate = Date()
         self.lastResizeUpdate = lastResizeUpdate
-        self.updateTypeQueue.asyncAfter(deadline: .now()+0.5) {
+        self.updateTypeQueue.asyncAfter(deadline: .now() + Constants.resizeUpdateDelay) {
             if self.lastResizeUpdate==lastResizeUpdate {
                 self.setRangeValues(zstackOriginY: self.lastSeenZStackOrigin, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
             }
