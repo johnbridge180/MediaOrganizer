@@ -46,6 +46,7 @@ class MediaItemsViewModel: ObservableObject {
 
     @MainActor
     func fetchRows(limit: Int=0, filter: BSONDocument) async throws {
+        print("filter: \(filter)")
         isFetching = true
         if mongoHolder.client==nil {
             await mongoHolder.connect()
