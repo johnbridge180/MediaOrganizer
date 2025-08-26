@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 class ThumbnailViewModel: ObservableObject {
     @AppStorage("api_endpoint_url") private var apiEndpointUrl: String = ""
@@ -16,6 +17,10 @@ class ThumbnailViewModel: ObservableObject {
     var type: Int = 0
 
     let makeCGImageQueue: DispatchQueue
+    
+    private var qualityChangeTimer: Timer?
+    private var pendingQuality: Int?
+    private var isTransitioning: Bool = false
 
     private var cacheRow: PreviewCache?
     var item: MediaItem
@@ -57,19 +62,89 @@ class ThumbnailViewModel: ObservableObject {
             self.init(item, cacheRow: nil, makeCGImageQueue: makeCGImageQueue)
         }
     }
+    
+    deinit {
+        qualityChangeTimer?.invalidate()
+    }
 
-    func setDisplayType(_ type: Int) {
-        if type != self.type || cgImage==nil {
-            self.type=type
-            if type==2, let url = cachedImageLocation {
-                setImage(from: url)
-            } else if type==1, let url = tinythumbLocation {
+    func setDisplayType(_ targetType: Int) {
+        guard targetType != self.type || cgImage == nil else { return }
+        
+        qualityChangeTimer?.invalidate()
+        pendingQuality = targetType
+        
+        let debounceDelay: TimeInterval = isTransitioning ? 0.1 : 0.05
+        
+        qualityChangeTimer = Timer.scheduledTimer(withTimeInterval: debounceDelay, repeats: false) { [weak self] _ in
+            self?.applyQualityChange()
+        }
+    }
+    
+    private func applyQualityChange() {
+        guard let targetType = pendingQuality else { return }
+        pendingQuality = nil
+        
+        let previousType = self.type
+        
+        if targetType == previousType && cgImage != nil {
+            return
+        }
+        
+        isTransitioning = true
+        defer { isTransitioning = false }
+        
+        if shouldUseProgressiveLoading(from: previousType, to: targetType) {
+            performProgressiveLoading(to: targetType)
+        } else {
+            performDirectQualityChange(to: targetType)
+        }
+    }
+    
+    private func shouldUseProgressiveLoading(from: Int, to: Int) -> Bool {
+        return from == 0 && to == 2 && tinythumbLocation != nil
+    }
+    
+    private func performProgressiveLoading(to finalType: Int) {
+        if let url = tinythumbLocation {
+            self.type = 1
+            setImage(from: url)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.performDirectQualityChange(to: finalType)
+            }
+        } else {
+            performDirectQualityChange(to: finalType)
+        }
+    }
+    
+    private func performDirectQualityChange(to targetType: Int) {
+        self.type = targetType
+        
+        switch targetType {
+        case 2:
+            if let url = cachedImageLocation {
                 setImage(from: url)
             } else {
-                DispatchQueue.main.async(qos: .background, execute: {
-                    self.objectWillChange.send()
-                })
+                loadPlaceholder()
             }
+        case 1:
+            if let url = tinythumbLocation {
+                setImage(from: url)
+            } else {
+                loadPlaceholder()
+            }
+        case 0:
+            loadPlaceholder()
+        default:
+            loadPlaceholder()
+        }
+    }
+    
+    private func loadPlaceholder() {
+        cgImage = nil
+        imageView = nil
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
         }
     }
 
