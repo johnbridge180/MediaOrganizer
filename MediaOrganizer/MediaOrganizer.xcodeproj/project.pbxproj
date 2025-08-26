@@ -31,6 +31,7 @@
 		FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */; };
 		FCAB123456789ABC /* PhotoGridItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAB123456789ABD /* PhotoGridItemView.swift */; };
 		FCAB123456789ABE /* ViewportTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAB123456789ABF /* ViewportTracker.swift */; };
+		FCAB123456789AC0 /* PhotoGridLayoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAB123456789AC1 /* PhotoGridLayoutManager.swift */; };
 		FC78DEA82964AEA7009F3F27 /* View+onFrameChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */; };
 		FC9F21AD00000023 /* PhotosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000019 /* PhotosView.swift */; };
 		FC9F21AD00000024 /* EventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000020 /* EventsView.swift */; };
@@ -104,6 +105,7 @@
 		FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
 		FCAB123456789ABD /* PhotoGridItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridItemView.swift; sourceTree = "<group>"; };
 		FCAB123456789ABF /* ViewportTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewportTracker.swift; sourceTree = "<group>"; };
+		FCAB123456789AC1 /* PhotoGridLayoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridLayoutManager.swift; sourceTree = "<group>"; };
 		FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+onFrameChange.swift"; sourceTree = "<group>"; };
 		FC9F21AD00000019 /* PhotosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosView.swift; sourceTree = "<group>"; };
 		FC9F21AD00000020 /* EventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsView.swift; sourceTree = "<group>"; };
@@ -326,6 +328,7 @@
 				FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */,
 				FCAB123456789ABD /* PhotoGridItemView.swift */,
 				FCAB123456789ABF /* ViewportTracker.swift */,
+				FCAB123456789AC1 /* PhotoGridLayoutManager.swift */,
 				FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */,
 			);
 			path = PhotoGrid;
@@ -620,6 +623,7 @@
 				FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */,
 				FCAB123456789ABC /* PhotoGridItemView.swift in Sources */,
 				FCAB123456789ABE /* ViewportTracker.swift in Sources */,
+				FCAB123456789AC0 /* PhotoGridLayoutManager.swift in Sources */,
 				FC39B92029577FCA003F3648 /* ThumbnailView.swift in Sources */,
 				FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */,
 				FC455E48296A1B730013E88E /* MediaItem.swift in Sources */,
