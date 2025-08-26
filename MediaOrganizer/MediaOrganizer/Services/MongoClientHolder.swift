@@ -11,21 +11,21 @@ import NIOPosix
 
 class MongoClientHolder: ObservableObject {
     let elg = MultiThreadedEventLoopGroup(numberOfThreads: 4)
-    @AppStorage("mongodb_url") private var mongodb_url: String = ""
-    @Published var client: MongoClient? = nil
-    @Published var db: MongoDatabase? = nil
-    
+    @AppStorage("mongodb_url") private var mongodbUrl: String = ""
+    @Published var client: MongoClient?
+    @Published var db: MongoDatabase?
+
     @MainActor
     func connect() async {
         do {
-            print(mongodb_url)
-            client = try MongoClient(mongodb_url, using: elg)
+            print(mongodbUrl)
+            client = try MongoClient(mongodbUrl, using: elg)
             db = client!.db("media_organizer")
         } catch {
             print("Error connecting to MongoDB")
         }
     }
-    
+
     func close() {
         try? client?.syncClose()
         cleanupMongoSwift()

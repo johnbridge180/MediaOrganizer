@@ -9,18 +9,18 @@ import SwiftUI
 import SwiftBSON
 
 struct MediaItemDetailView: View {
-    
+
     let dateFormatter: DateFormatter
-    
+
     @StateObject var detailVModel: MediaItemDetailViewModel
-    
+
     init(_ item: MediaItem, initialThumb: CGImage? = nil, initialThumbOrientation: Image.Orientation = .up) {
         self.dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium
         dateFormatter.timeStyle = .short
         self._detailVModel=StateObject(wrappedValue: MediaItemDetailViewModel(item, initialThumb: initialThumb, initialThumbOrientation: initialThumbOrientation))
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             HStack {
@@ -28,7 +28,7 @@ struct MediaItemDetailView: View {
                 VStack {
                     HStack {
                         VStack {
-                            //TODO: cache images on disk before displaying
+                            // TODO: cache images on disk before displaying
                             if let cgImage = detailVModel.cgImage {
                                 Image(cgImage, scale: 1.0, orientation: detailVModel.orientation, label: Text(detailVModel.item.name))
                                     .resizable()
@@ -36,9 +36,9 @@ struct MediaItemDetailView: View {
                                     .frame(maxHeight: geometry.size.height)
                             }
                             HStack {
-                                if(detailVModel.downloadProgress<1.0) {
+                                if detailVModel.downloadProgress<1.0 {
                                     Text("Loading Image")
-                                    ProgressView(value: detailVModel.downloadProgress, total:1.0)
+                                    ProgressView(value: detailVModel.downloadProgress, total: 1.0)
                                 }
                             }
                         }
@@ -75,26 +75,26 @@ struct MediaItemDetailView: View {
                                         .lineLimit(1)
                                         .truncationMode(.tail)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text("\(detailVModel.item.exif_data.width)x\(detailVModel.item.exif_data.height)")
+                                    Text("\(detailVModel.item.exifData.width)x\(detailVModel.item.exifData.height)")
                                         .lineLimit(1)
                                         .truncationMode(.tail)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text("\(detailVModel.item.exif_data.make) \(detailVModel.item.exif_data.model)")
+                                    Text("\(detailVModel.item.exifData.make) \(detailVModel.item.exifData.model)")
                                         .lineLimit(1)
                                         .truncationMode(.tail)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text("\(detailVModel.item.exif_data.shutter_speed)")
+                                    Text("\(detailVModel.item.exifData.shutterSpeed)")
                                         .lineLimit(1)
                                         .truncationMode(.tail)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text("\(detailVModel.item.exif_data.lens)")
+                                    Text("\(detailVModel.item.exifData.lens)")
                                         .lineLimit(1)
                                         .truncationMode(.tail)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(String(format: "%gmm", detailVModel.item.exif_data.focal_length)).lineLimit(1)
+                                    Text(String(format: "%gmm", detailVModel.item.exifData.focalLength)).lineLimit(1)
                                         .truncationMode(.tail)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(String(format:"ƒ/%g",detailVModel.item.exif_data.aperture))
+                                    Text(String(format: "ƒ/%g", detailVModel.item.exifData.aperture))
                                         .lineLimit(1)
                                         .truncationMode(.tail)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -106,7 +106,7 @@ struct MediaItemDetailView: View {
                         .padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 5))
                     }
                     HStack {
-                        Button() {
+                        Button {
                             detailVModel.downloadFile()
                         } label: {
                             if let download = detailVModel.activeDownload {
@@ -120,7 +120,7 @@ struct MediaItemDetailView: View {
                         } else {
                             Color.clear
                         }})
-                        Button() {
+                        Button {
                             detailVModel.exportPreview()
                         } label: {
                             if let download = detailVModel.activePreviewExport {
@@ -146,9 +146,9 @@ struct MediaItemDetailView: View {
 }
 
 struct DownloadButtonBackgroundView: View {
-    //TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
+    // TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
     @ObservedObject var activeDownload: DownloadModel
-    
+
     var body: some View {
         GeometryReader { geometry in
             HStack {
@@ -163,10 +163,10 @@ struct DownloadButtonBackgroundView: View {
 }
 
 struct DownloadButtonLabel: View {
-    //TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
+    // TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
     @ObservedObject var activeDownload: DownloadModel
     let title: String
-    
+
     var body: some View {
         if activeDownload.completed {
             Label(title, systemImage: "checkmark.circle.fill")
@@ -178,7 +178,7 @@ struct DownloadButtonLabel: View {
 
 struct MediaItemDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        try? MediaItemDetailView(MediaItem(_id: BSONObjectID("634491ff273cfa9985098782"), time: Date(timeIntervalSince1970: 1661834242000), name: "IMG_4303.CR3", upload_id: BSONObjectID("634491ff273cfa9985098781"), size: 28410943, upload_complete: true, exif_data: ExifData(width: 1, height: 1, make: "Make", model: "Model", shutter_speed: 0.1, iso_speed: 100, lens: "LENS", focal_length: 0.1, aperture: 4.0, flip: 0)), initialThumb: nil)
+        try? MediaItemDetailView(MediaItem(_id: BSONObjectID("634491ff273cfa9985098782"), time: Date(timeIntervalSince1970: 1661834242000), name: "IMG_4303.CR3", uploadId: BSONObjectID("634491ff273cfa9985098781"), size: 28410943, uploadComplete: true, exifData: ExifData(width: 1, height: 1, make: "Make", model: "Model", shutterSpeed: 0.1, isoSpeed: 100, lens: "LENS", focalLength: 0.1, aperture: 4.0, flip: 0)), initialThumb: nil)
         EmptyView()
     }
 }

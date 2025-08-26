@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-//credit: https://stackoverflow.com/a/58875884/949695
+// credit: https://stackoverflow.com/a/58875884/949695
 extension View {
-    func onFrameChange(_ frameHandler: @escaping (CGRect)->(), enabled isEnabled: Bool = true) -> some View {
+    func onFrameChange(_ frameHandler: @escaping (CGRect) -> Void, enabled isEnabled: Bool = true) -> some View {
         guard isEnabled else { return AnyView(self) }
 
         return AnyView(self.background(GeometryReader { (geometry: GeometryProxy) in
@@ -19,7 +19,7 @@ extension View {
         }))
     }
 
-    private func beforeReturn(_ onBeforeReturn: ()->()) -> Self {
+    private func beforeReturn(_ onBeforeReturn: () -> Void) -> Self {
         onBeforeReturn()
         return self
     }

@@ -10,40 +10,40 @@ import CoreData
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    
-    let min_slider_value: Double = 50.0
-    let max_slider_value: Double = 400.0
-    @State var photo_size_slider_value: Double = 300.0
-    @State var slider_disabled: Bool = false
-    
-    @State var selected_tab: Int? = 1
-    
-    @State var multi_select: Bool = false
-    
-    @StateObject var download_manager = DownloadManager.shared
-    
-    var mongo_holder: MongoClientHolder
-    
+
+    let minSliderValue: Double = 50.0
+    let maxSliderValue: Double = 400.0
+    @State var photoSizeSliderValue: Double = 300.0
+    @State var sliderDisabled: Bool = false
+
+    @State var selectedTab: Int? = 1
+
+    @State var multiSelect: Bool = false
+
+    @StateObject var downloadManager = DownloadManager.shared
+
+    var mongoHolder: MongoClientHolder
+
     var placement: ToolbarItemPlacement
-    
+
     init() {
-        let mongo_holder = MongoClientHolder()
-        self.mongo_holder = mongo_holder
-        
+        let mongoHolder = MongoClientHolder()
+        self.mongoHolder = mongoHolder
+
         if #available(macOS 13.0, *) {
             self.placement = .destructiveAction
         } else {
             self.placement = .automatic
         }
     }
-    
+
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some View {
         NavigationView {
             List {
-                NavigationLink(tag: 1, selection: $selected_tab) {
-                    PhotosView(idealGridItemSize: $photo_size_slider_value, multi_select: $multi_select, slider_disabled: $slider_disabled, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate)
+                NavigationLink(tag: 1, selection: $selectedTab) {
+                    PhotosView(idealGridItemSize: $photoSizeSliderValue, multiSelect: $multiSelect, sliderDisabled: $sliderDisabled, minGridItemSize: minSliderValue, mongoHolder: mongoHolder, appDelegate: appDelegate)
                 } label: {
                     if #available(iOS 14.0, *) {
                         Image(systemName: "photo.on.rectangle.angled")
@@ -52,17 +52,17 @@ struct ContentView: View {
                     }
                     Text("Photos")
                 }
-                NavigationLink(tag: 2, selection: $selected_tab) {
-                    UploadsView(idealGridItemSize: $photo_size_slider_value, slider_disabled: $slider_disabled, minGridItemSize: min_slider_value, mongo_holder: mongo_holder, appDelegate: appDelegate)
+                NavigationLink(tag: 2, selection: $selectedTab) {
+                    UploadsView(idealGridItemSize: $photoSizeSliderValue, sliderDisabled: $sliderDisabled, minGridItemSize: minSliderValue, mongoHolder: mongoHolder, appDelegate: appDelegate)
                         .onAppear {
-                            photo_size_slider_value=99.0
-                            slider_disabled=true
+                            photoSizeSliderValue=99.0
+                            sliderDisabled=true
                         }
                 } label: {
                     Image(systemName: "sdcard")
                     Text("Uploads")
                 }
-                NavigationLink(tag: 3, selection: $selected_tab) {
+                NavigationLink(tag: 3, selection: $selectedTab) {
                     EventsView()
                 } label: {
                     if #available(iOS 16.0, macOS 13.0, *) {
@@ -78,15 +78,15 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .navigation) {
                     Button(action: {
-                        NSApp.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil,from: nil)
+                        NSApp.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil, from: nil)
                     }, label: {
                         Label("Toggle Sidebar", systemImage: "sidebar.left")
                     })
                 }
                 ToolbarItemGroup(placement: .navigation) {
                     HStack {
-                        Slider(value: $photo_size_slider_value, in: min_slider_value...max_slider_value) {
-                            
+                        Slider(value: $photoSizeSliderValue, in: minSliderValue...maxSliderValue) {
+
                         } minimumValueLabel: {
                             Label {
                                 Text("-")
@@ -99,12 +99,12 @@ struct ContentView: View {
                             } icon: {
                                 Image(systemName: "plus")
                             }
-                            
+
                         }
                         .focusable(false)
                         .frame(minWidth: 150.0)
-                        .disabled(slider_disabled)
-                        
+                        .disabled(sliderDisabled)
+
                         Spacer()
                     }
                 }
@@ -113,15 +113,15 @@ struct ContentView: View {
         }
         .frame(minWidth: 400, minHeight: 200)
         .onDisappear {
-            mongo_holder.close()
+            mongoHolder.close()
         }
         .toolbar {
             ToolbarItemGroup {
                 Button {
-                    multi_select.toggle()
+                    multiSelect.toggle()
                 } label: {
-                    Label("Select Multiple Photos", systemImage: multi_select ? "square.stack.3d.up.fill" : "square.stack.3d.up")
-                        .foregroundColor(multi_select ? Color.blue : Color.secondary)
+                    Label("Select Multiple Photos", systemImage: multiSelect ? "square.stack.3d.up.fill" : "square.stack.3d.up")
+                        .foregroundColor(multiSelect ? Color.blue : Color.secondary)
                 }
                 Button {
                     appDelegate.openDownloadsPanel()

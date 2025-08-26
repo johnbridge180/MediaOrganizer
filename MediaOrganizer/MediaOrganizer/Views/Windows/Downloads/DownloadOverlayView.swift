@@ -9,15 +9,15 @@ import SwiftUI
 
 struct DownloadOverlayView: View {
     let downloadOverlayQueue: DispatchQueue = DispatchQueue(label: "com.jbridge.downloadOverlayQueue")
-    
+
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
+
     @ObservedObject var downloadManager = DownloadManager.shared
-    
+
     var body: some View {
         ScrollView {
             VStack {
-                if(downloadManager.downloads.count>0) {
+                if !downloadManager.downloads.isEmpty {
                     ForEach(downloadManager.downloads.reversed(), id: \.destination) { download in
                         DownloadItemView(download: download, downloadOverlayQueue: downloadOverlayQueue, appDelegate: appDelegate)
                     }
@@ -36,11 +36,11 @@ struct DownloadOverlayView: View {
 }
 
 struct DownloadItemView: View {
-    //TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
+    // TODO: explore changing to @StateObject (@ObservedObject will need to be reinstantiated if view is redrawn)
     @ObservedObject var download: DownloadModel
     let downloadOverlayQueue: DispatchQueue
     let appDelegate: AppDelegate
-    
+
     var body: some View {
         HStack {
             let thumbViewModel = ThumbnailViewModel(download.item, makeCGImageQueue: downloadOverlayQueue)
@@ -77,7 +77,7 @@ struct DownloadItemView: View {
 }
 
 struct DownloadOverlayView_Previews: PreviewProvider {
-    
+
     static var previews: some View {
         DownloadOverlayView()
     }

@@ -11,28 +11,21 @@ import SwiftUI
 class Tools {
     static func translateExifOrientationToImageOrientation(_ exifOrientationValue: UInt8) -> Image.Orientation? {
         var orientation: Image.Orientation = .up
-        switch(exifOrientationValue) {
+        switch exifOrientationValue {
         case 2:
             orientation = .upMirrored
-            break;
-        case 3:
+            case 3:
             orientation = .down
-            break;
-        case 4:
+            case 4:
             orientation = .downMirrored
-            break;
-        case 5:
+            case 5:
             orientation = .leftMirrored
-            break;
-        case 6:
+            case 6:
             orientation = .right
-            break;
-        case 7:
+            case 7:
             orientation = .rightMirrored
-            break;
-        case 8:
+            case 8:
             orientation = .left
-            break;
         default:
             orientation = .up
         }

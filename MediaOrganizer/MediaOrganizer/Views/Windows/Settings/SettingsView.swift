@@ -10,7 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @State private var activeTab: UInt8 = 0
-    
+
     var body: some View {
         ZStack {
             TabView {

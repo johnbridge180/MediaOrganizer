@@ -8,17 +8,17 @@
 import SwiftUI
 
 struct GeneralSettingsView: View {
-    
-    @AppStorage("downloads_folder") private var downloads_folder: String = "~/Downloads"
-    @AppStorage("api_endpoint_url") private var api_endpoint_url: String = ""
-    
+
+    @AppStorage("downloads_folder") private var downloadsFolder: String = "~/Downloads"
+    @AppStorage("api_endpoint_url") private var apiEndpointUrl: String = ""
+
     var body: some View {
         VStack {
             Spacer()
             HStack {
                 Spacer(minLength: 20)
                 Form {
-                    TextField("Downloads Folder: ", text: $downloads_folder)
+                    TextField("Downloads Folder: ", text: $downloadsFolder)
                 }
                 .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .fixedSize(horizontal: false, vertical: true)

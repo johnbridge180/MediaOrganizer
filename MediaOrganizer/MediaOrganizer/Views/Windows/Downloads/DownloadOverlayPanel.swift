@@ -17,7 +17,7 @@ class DownloadOverlayPanel: NSPanel {
         collectionBehavior.insert(.fullScreenAuxiliary)
         animationBehavior = .utilityWindow
         hidesOnDeactivate = true
- 
+
         titleVisibility = .hidden
         titlebarAppearsTransparent = true
         standardWindowButton(.closeButton)?.isHidden = true
@@ -28,20 +28,20 @@ class DownloadOverlayPanel: NSPanel {
         let hostingView = NSHostingView(rootView: view.ignoresSafeArea())
         contentView = hostingView
     }
-    
+
     override func resignMain() {
         super.resignMain()
         close()
     }
-    
+
     override var canBecomeKey: Bool {
         return true
     }
-     
+
     override var canBecomeMain: Bool {
         return true
     }
-    
+
     func present() {
         orderFront(nil)
         makeKey()
@@ -51,7 +51,7 @@ class DownloadOverlayPanel: NSPanel {
 struct VisualEffectView: NSViewRepresentable {
     let material: NSVisualEffectView.Material
     let blendingMode: NSVisualEffectView.BlendingMode
-    
+
     func makeNSView(context: Context) -> NSVisualEffectView {
         let visualEffectView = NSVisualEffectView()
         visualEffectView.material = material

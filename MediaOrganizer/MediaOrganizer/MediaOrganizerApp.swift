@@ -9,18 +9,18 @@ import SwiftUI
 import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    
+
     var mediaItemDetailWindows: [MediaItemDetailWindow] = []
-    
-    var downloadsPanel: DownloadOverlayPanel? = nil
-    
+
+    var downloadsPanel: DownloadOverlayPanel?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
-    
+
     func openMediaItemDetailWindow(rect: CGRect, item: MediaItem, initialThumb: CGImage? = nil, orientation: Image.Orientation) {
         let mediaItemDetailWindow = MediaItemDetailWindow(contentRect: rect)
         mediaItemDetailWindow.delegate=self
@@ -28,11 +28,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         mediaItemDetailWindow.contentView = NSHostingView(rootView: MediaItemDetailView(item, initialThumb: initialThumb, initialThumbOrientation: orientation))
         mediaItemDetailWindows.append(mediaItemDetailWindow)
     }
-    
+
     func openDownloadsPanel() {
-        if NSApp.windows.count>0 {
+        if !NSApp.windows.isEmpty {
             let window = NSApp.windows[0]
-            let height: CGFloat = DownloadManager.shared.downloads.count==0 ? 100.0 : (DownloadManager.shared.downloads.count > 5 ? 385 : CGFloat(DownloadManager.shared.downloads.count)*75.0 + 10)
+            let height: CGFloat = DownloadManager.shared.downloads.isEmpty ? 100.0 : (DownloadManager.shared.downloads.count > 5 ? 385 : CGFloat(DownloadManager.shared.downloads.count)*75.0 + 10)
             self.downloadsPanel = DownloadOverlayPanel(contentRect: CGRect(x: window.frame.maxX-325, y: window.frame.maxY-(height+45), width: 300, height: height))
         }
         self.downloadsPanel?.present()
@@ -41,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
 @main
 struct MediaOrganizerApp: App {
-    
+
     let persistenceController = PersistenceController.shared
 
     var body: some Scene {
@@ -55,11 +55,11 @@ struct MediaOrganizerApp: App {
             SidebarCommands()
         }
         .windowToolbarStyle(.unified)
-        
+
         Settings {
             SettingsView()
         }
         .windowToolbarStyle(.unified)
     }
-    
+
 }

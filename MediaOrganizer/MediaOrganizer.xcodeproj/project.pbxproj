@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		FC39B91E29577D87003F3648 /* MongoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = FC39B91D29577D87003F3648 /* MongoSwift */; };
-		FC39B92029577FCA003F3648 /* MediaThumbView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B91F29577FCA003F3648 /* MediaThumbView.swift */; };
+		FC39B92029577FCA003F3648 /* ThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B91F29577FCA003F3648 /* ThumbnailView.swift */; };
 		FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */; };
 		FC39B924295783C5003F3648 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B923295783C5003F3648 /* SettingsView.swift */; };
 		FC39B92D2958F758003F3648 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B92C2958F758003F3648 /* GeneralSettingsView.swift */; };
@@ -25,12 +25,14 @@
 		FC455E4E296A8DE80013E88E /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC455E4D296A8DE80013E88E /* DownloadManager.swift */; };
 		FC5DD5B6289EADE400456566 /* image_tools.c in Sources */ = {isa = PBXBuildFile; fileRef = FC5DD5B5289EADE400456566 /* image_tools.c */; };
 		FC673FD32E5A575800CC2113 /* DownloadOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC673FD22E5A575800CC2113 /* DownloadOperation.swift */; };
-		FC78100D2967CD1400C0D641 /* ThumbViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100C2967CD1400C0D641 /* ThumbViewModel.swift */; };
-		FC78100F2967D93E00C0D641 /* GridViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100E2967D93E00C0D641 /* GridViewModel.swift */; };
+		FC78100D2967CD1400C0D641 /* ThumbnailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100C2967CD1400C0D641 /* ThumbnailViewModel.swift */; };
+		FC78100F2967D93E00C0D641 /* PhotoGridViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100E2967D93E00C0D641 /* PhotoGridViewModel.swift */; };
 		FC78DEA2295E5395009F3F27 /* UploadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA1295E5395009F3F27 /* UploadsView.swift */; };
 		FC78DEA4295E546B009F3F27 /* UploadsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */; };
-		FC78DEA6295F44AF009F3F27 /* MediaThumbAsyncGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA5295F44AF009F3F27 /* MediaThumbAsyncGrid.swift */; };
+		FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */; };
 		FC78DEA82964AEA7009F3F27 /* View+onFrameChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */; };
+		FC9F21AD00000023 /* PhotosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000019 /* PhotosView.swift */; };
+		FC9F21AD00000024 /* EventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000020 /* EventsView.swift */; };
 		FCD57DEA295A68700050C6F0 /* MediaItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */; };
 		FCDC4941295B725B00E2DDFE /* MediaItemDetailWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCDC4940295B725B00E2DDFE /* MediaItemDetailWindow.swift */; };
 		FCF69761296BC7D600F2093D /* DownloadOverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */; };
@@ -43,8 +45,6 @@
 		FCFA10C628ACBC3C009A5A65 /* MediaOrganizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCFA10C528ACBC3C009A5A65 /* MediaOrganizerTests.swift */; };
 		FCFA10D028ACBC3C009A5A65 /* MediaOrganizerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCFA10CF28ACBC3C009A5A65 /* MediaOrganizerUITests.swift */; };
 		FCFA10D228ACBC3C009A5A65 /* MediaOrganizerUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCFA10D128ACBC3C009A5A65 /* MediaOrganizerUITestsLaunchTests.swift */; };
-		FC9F21AD00000023 /* PhotosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000019 /* PhotosView.swift */; };
-		FC9F21AD00000024 /* EventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000020 /* EventsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -268,35 +268,6 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		FC9F21AD00000013 /* Windows */ = {
-			isa = PBXGroup;
-			children = (
-				FC9F21AD00000021 /* MediaDetail */,
-				FC9F21AD00000022 /* Downloads */,
-				FC39B92B2958F724003F3648 /* Settings */,
-			);
-			path = Windows;
-			sourceTree = "<group>";
-		};
-		FC9F21AD00000021 /* MediaDetail */ = {
-			isa = PBXGroup;
-			children = (
-				FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */,
-				FC455E422969F3ED0013E88E /* MediaItemDetailViewModel.swift */,
-				FCDC4940295B725B00E2DDFE /* MediaItemDetailWindow.swift */,
-			);
-			path = MediaDetail;
-			sourceTree = "<group>";
-		};
-		FC9F21AD00000022 /* Downloads */ = {
-			isa = PBXGroup;
-			children = (
-				FC455E49296A7EBE0013E88E /* DownloadOverlayView.swift */,
-				FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */,
-			);
-			path = Downloads;
-			sourceTree = "<group>";
-		};
 		FC9F21AD00000006 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -318,6 +289,26 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		FC9F21AD00000009 /* Tabs */ = {
+			isa = PBXGroup;
+			children = (
+				FC9F21AD00000016 /* Photos */,
+				FC9F21AD00000017 /* Uploads */,
+				FC9F21AD00000018 /* Events */,
+			);
+			path = Tabs;
+			sourceTree = "<group>";
+		};
+		FC9F21AD00000013 /* Windows */ = {
+			isa = PBXGroup;
+			children = (
+				FC9F21AD00000021 /* MediaDetail */,
+				FC9F21AD00000022 /* Downloads */,
+				FC39B92B2958F724003F3648 /* Settings */,
+			);
+			path = Windows;
+			sourceTree = "<group>";
+		};
 		FC9F21AD00000014 /* Thumbnail */ = {
 			isa = PBXGroup;
 			children = (
@@ -335,16 +326,6 @@
 				FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */,
 			);
 			path = PhotoGrid;
-			sourceTree = "<group>";
-		};
-		FC9F21AD00000009 /* Tabs */ = {
-			isa = PBXGroup;
-			children = (
-				FC9F21AD00000016 /* Photos */,
-				FC9F21AD00000017 /* Uploads */,
-				FC9F21AD00000018 /* Events */,
-			);
-			path = Tabs;
 			sourceTree = "<group>";
 		};
 		FC9F21AD00000016 /* Photos */ = {
@@ -372,30 +353,23 @@
 			path = Events;
 			sourceTree = "<group>";
 		};
-		FC9F21AD00000010 /* Modals */ = {
+		FC9F21AD00000021 /* MediaDetail */ = {
 			isa = PBXGroup;
 			children = (
 				FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */,
+				FC455E422969F3ED0013E88E /* MediaItemDetailViewModel.swift */,
 				FCDC4940295B725B00E2DDFE /* MediaItemDetailWindow.swift */,
 			);
-			path = Modals;
+			path = MediaDetail;
 			sourceTree = "<group>";
 		};
-		FC9F21AD00000011 /* Overlays */ = {
+		FC9F21AD00000022 /* Downloads */ = {
 			isa = PBXGroup;
 			children = (
 				FC455E49296A7EBE0013E88E /* DownloadOverlayView.swift */,
 				FCF69760296BC7D600F2093D /* DownloadOverlayPanel.swift */,
 			);
-			path = Overlays;
-			sourceTree = "<group>";
-		};
-		FC9F21AD00000012 /* UploadsTab */ = {
-			isa = PBXGroup;
-			children = (
-				FC78DEA1295E5395009F3F27 /* UploadsView.swift */,
-			);
-			path = UploadsTab;
+			path = Downloads;
 			sourceTree = "<group>";
 		};
 		FCFA10AD28ACBC3B009A5A65 /* MediaOrganizer */ = {
@@ -463,6 +437,7 @@
 				FCFA10A828ACBC3B009A5A65 /* Sources */,
 				FCFA10A928ACBC3B009A5A65 /* Frameworks */,
 				FCFA10AA28ACBC3B009A5A65 /* Resources */,
+				FC928D182E5CFDC90018F31F /* Run Script */,
 			);
 			buildRules = (
 			);
@@ -589,6 +564,28 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		FC928D182E5CFDC90018F31F /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = " if [[ \"$(uname -m)\" == arm64 ]]; then export PATH=\"/opt/homebrew/bin:$PATH\"; fi\n  if which swiftlint > /dev/null; then\n      swiftlint --fix --config .swiftlint.yml && swiftlint --config .swiftlint.yml\n  else\n      echo \"warning: SwiftLint not installed\"\n  fi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		FC3CAC43289B6C0B00C96BF0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -614,11 +611,11 @@
 				FC39B92F2958F828003F3648 /* ServerSettingsView.swift in Sources */,
 				FC78DEA82964AEA7009F3F27 /* View+onFrameChange.swift in Sources */,
 				FC39B92D2958F758003F3648 /* GeneralSettingsView.swift in Sources */,
-				FC78100D2967CD1400C0D641 /* ThumbViewModel.swift in Sources */,
+				FC78100D2967CD1400C0D641 /* ThumbnailViewModel.swift in Sources */,
 				FCFA10B828ACBC3B009A5A65 /* Persistence.swift in Sources */,
 				FCD57DEA295A68700050C6F0 /* MediaItemDetailView.swift in Sources */,
-				FC78DEA6295F44AF009F3F27 /* MediaThumbAsyncGrid.swift in Sources */,
-				FC39B92029577FCA003F3648 /* MediaThumbView.swift in Sources */,
+				FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */,
+				FC39B92029577FCA003F3648 /* ThumbnailView.swift in Sources */,
 				FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */,
 				FC455E48296A1B730013E88E /* MediaItem.swift in Sources */,
 				FCFA10B128ACBC3B009A5A65 /* ContentView.swift in Sources */,
@@ -628,7 +625,7 @@
 				FC455E4E296A8DE80013E88E /* DownloadManager.swift in Sources */,
 				FC78DEA2295E5395009F3F27 /* UploadsView.swift in Sources */,
 				FCF69761296BC7D600F2093D /* DownloadOverlayPanel.swift in Sources */,
-				FC78100F2967D93E00C0D641 /* GridViewModel.swift in Sources */,
+				FC78100F2967D93E00C0D641 /* PhotoGridViewModel.swift in Sources */,
 				FC455E4C296A83A40013E88E /* DownloadModel.swift in Sources */,
 				FC455E46296A0A4D0013E88E /* Tools.swift in Sources */,
 				FC9F21AD00000023 /* PhotosView.swift in Sources */,

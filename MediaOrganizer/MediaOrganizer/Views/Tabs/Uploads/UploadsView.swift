@@ -10,37 +10,37 @@ import SwiftBSON
 import MongoSwift
 
 struct UploadsView: View {
-    
+
     @StateObject var uploadsVModel: UploadsViewModel
-    
-    var mongo_holder: MongoClientHolder
-    
+
+    var mongoHolder: MongoClientHolder
+
     let minGridItemSize: Double
-    
+
     @Binding var idealGridItemSize: Double
-    
+
     var appDelegate: AppDelegate
-    
+
     var dateFormatter: DateFormatter
-    
+
     @State var didLoadRows: Bool = false
-    
-    @Binding var slider_disabled: Bool
-    
-    @State var expandedUpload: Upload? = nil
-    
-    init(idealGridItemSize: Binding<Double>, slider_disabled: Binding<Bool>, minGridItemSize: Double, mongo_holder: MongoClientHolder, appDelegate: AppDelegate) {
-        self.mongo_holder=mongo_holder
+
+    @Binding var sliderDisabled: Bool
+
+    @State var expandedUpload: Upload?
+
+    init(idealGridItemSize: Binding<Double>, sliderDisabled: Binding<Bool>, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate) {
+        self.mongoHolder=mongoHolder
         self.minGridItemSize=minGridItemSize
-        self._uploadsVModel = StateObject(wrappedValue: UploadsViewModel(mongo_holder: mongo_holder))
+        self._uploadsVModel = StateObject(wrappedValue: UploadsViewModel(mongoHolder: mongoHolder))
         self._idealGridItemSize=idealGridItemSize
-        self._slider_disabled=slider_disabled
+        self._sliderDisabled=sliderDisabled
         self.appDelegate=appDelegate
         self.dateFormatter=DateFormatter()
         dateFormatter.dateStyle = .medium
         dateFormatter.timeStyle = .short
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             if let upload: Upload = expandedUpload {
@@ -48,7 +48,7 @@ struct UploadsView: View {
                     HStack {
                         Button {
                             withAnimation {
-                                self.slider_disabled = true
+                                self.sliderDisabled = true
                                 self.idealGridItemSize = 99.0
                                 self.expandedUpload = nil
                             }
@@ -68,13 +68,13 @@ struct UploadsView: View {
                         .fill(.separator)
                         .frame(maxWidth: .infinity, maxHeight: 2)
                         .padding(EdgeInsets(top: -5, leading: 15, bottom: 0, trailing: 0))
-                    PhotoGridView(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: ["upload_id":.objectID(upload._id)], horizontalScroll: false)
+                    PhotoGridView(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongoHolder: mongoHolder, appDelegate: appDelegate, filter: ["upload_id": .objectID(upload._id)], horizontalScroll: false)
                         .frame(width: geometry.size.width)
                 }
             } else {
                 ScrollView(.vertical) {
                     VStack {
-                        if(didLoadRows && !uploadsVModel.isFetching) {
+                        if didLoadRows && !uploadsVModel.isFetching {
                             ForEach(uploadsVModel.uploads) { upload in
                                 VStack {
                                     HStack {
@@ -86,7 +86,7 @@ struct UploadsView: View {
                                         Menu {
                                             Button("Download") {
                                                 Task {
-                                                    for try await doc in try await mongo_holder.client!.db("media_organizer").collection("files").find(["upload_id":BSON.objectID(upload._id)], options: FindOptions(sort: ["time":-1])) {
+                                                    for try await doc in try await mongoHolder.client!.db("media_organizer").collection("files").find(["upload_id": BSON.objectID(upload._id)], options: FindOptions(sort: ["time": -1])) {
                                                         if let item: MediaItem = try? BSONDecoder().decode(MediaItem.self, from: doc) {
                                                             DownloadManager.shared.download(item)
                                                         }
@@ -103,7 +103,7 @@ struct UploadsView: View {
                                     .onTapGesture {
                                         withAnimation {
                                             self.expandedUpload = upload
-                                            self.slider_disabled = false
+                                            self.sliderDisabled = false
                                         }
                                     }
                                     .padding(EdgeInsets(top: 5, leading: 15, bottom: -2, trailing: 0))
@@ -111,7 +111,7 @@ struct UploadsView: View {
                                         .fill(.separator)
                                         .frame(maxWidth: .infinity, maxHeight: 2)
                                         .padding(EdgeInsets(top: -5, leading: 15, bottom: 0, trailing: 0))
-                                    PhotoGridView(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongo_holder: mongo_holder, appDelegate: appDelegate, filter: ["upload_id":.objectID(upload._id)], horizontalScroll: true)
+                                    PhotoGridView(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongoHolder: mongoHolder, appDelegate: appDelegate, filter: ["upload_id": .objectID(upload._id)], horizontalScroll: true)
                                         .frame(width: geometry.size.width, height: CGFloat(idealGridItemSize))
                                 }
                             }
@@ -119,7 +119,7 @@ struct UploadsView: View {
                     }
                 }
                 .onAppear {
-                    if(!didLoadRows) {
+                    if !didLoadRows {
                         Task {
                             do {
                                 try await uploadsVModel.fetchRows(start: 0)
@@ -135,8 +135,8 @@ struct UploadsView: View {
 
 struct UploadsView_Previews: PreviewProvider {
     static var previews: some View {
-        UploadsView(idealGridItemSize: Binding(get: { return 300.0 }, set: { _ in }), slider_disabled: Binding(get: { return true }, set: { _ in }), minGridItemSize: 50.0,
-                    mongo_holder: MongoClientHolder(),
+        UploadsView(idealGridItemSize: Binding(get: { return 300.0 }, set: { _ in }), sliderDisabled: Binding(get: { return true }, set: { _ in }), minGridItemSize: 50.0,
+                    mongoHolder: MongoClientHolder(),
                     appDelegate: AppDelegate())
     }
 }

@@ -1,0 +1,233 @@
+# MediaOrganizer SwiftLint Configuration
+# HYBRID APPROACH: SwiftLint for Code Quality + swift-format for Formatting
+# Updated for Swift 6 and Xcode 16+ compatibility
+
+# ============================================================================
+# DISABLED FORMATTING RULES - These will be handled by swift-format
+# ============================================================================
+disabled_rules:
+  - line_length                           # swift-format will handle line wrapping
+  - trailing_whitespace                   # swift-format will handle whitespace
+  - vertical_whitespace_closing_braces    # swift-format will handle brace spacing  
+  - vertical_whitespace_opening_braces    # swift-format will handle brace spacing
+  - closure_spacing                       # swift-format will handle closure formatting
+  - operator_whitespace                   # swift-format will handle operator spacing
+  - switch_case_alignment                 # swift-format will handle switch formatting
+  - large_tuple                           # Allow tuples with more than 2 members
+  - todo                                  # Allow TODO comments during development
+
+# ============================================================================
+# CODE QUALITY RULES - SwiftLint's core strength
+# ============================================================================
+opt_in_rules:
+  # Performance and Best Practices
+  - empty_count                    # Prefer .isEmpty over .count == 0
+  - empty_string                   # Prefer .isEmpty over == ""
+  - first_where                    # Prefer .first(where:) over .filter { }.first
+  - contains_over_first_not_nil    # Prefer .contains over .first != nil
+  - last_where                     # Prefer .last(where:) over .filter { }.last
+  - reduce_into                    # Prefer reduce(into:) for performance
+  - sorted_first_last             # Prefer .min() and .max() over .sorted().first
+  
+  # Code Safety
+  - force_unwrapping              # Warn about force unwrapping
+  - weak_delegate                 # Ensure delegates are weak
+  - unused_optional_binding       # Catch unused optional bindings
+  
+  # Code Style (Non-formatting)
+  - explicit_self                 # Consistency in self usage
+  - redundant_void_return         # Remove unnecessary void returns
+  - redundant_optional_initialization  # Remove redundant optional initialization
+  - unneeded_parentheses_in_closure_argument  # Remove unnecessary parentheses
+  
+  # SwiftUI Specific
+  - multiple_closures_with_trailing_closure  # SwiftUI trailing closure style
+
+# Excluded directories
+excluded:
+  - Carthage
+  - Pods
+  - .build
+  - MediaOrganizerCLI
+  - MediaOrganizerAPI
+
+# ============================================================================
+# NAMING CONVENTIONS - Core code quality concern
+# ============================================================================
+
+# Identifier naming - Enforce camelCase for variables, functions, properties
+identifier_name:
+  min_length: 2
+  max_length: 50
+  excluded:
+    - id
+    - db        # Database abbreviation
+    - moc       # NSManagedObjectContext abbreviation
+    - url
+    - api
+    - i         # Allow single-char loop counters (common pattern)
+    - j         # Allow single-char loop counters (common pattern)  
+    - k         # Allow single-char loop counters (common pattern)
+    - x         # Allow single-char coordinates
+    - y         # Allow single-char coordinates
+    - _id       # MongoDB ObjectID field name (external constraint)
+  validates_start_with_lowercase: warning
+  allowed_symbols: ["_"]
+
+# Type naming - Enforce PascalCase for types
+type_name:
+  min_length: 3
+  max_length: 40
+  excluded:
+    - App
+
+# Generic type parameter naming
+generic_type_name:
+  min_length: 1
+  max_length: 20
+
+# ============================================================================
+# CODE COMPLEXITY AND STRUCTURE - Critical for maintainability
+# ============================================================================
+
+# Function body length - Encourage focused functions
+function_body_length:
+  warning: 60    # Reduced for better readability
+  error: 100
+
+# Function parameter count - Encourage good API design
+function_parameter_count:
+  warning: 5     # Reduced to encourage better parameter design
+  error: 8
+
+# Type body length - Encourage focused classes/structs
+type_body_length:
+  warning: 300   # Reduced to encourage better separation of concerns
+  error: 500
+
+# File length - Encourage proper file organization
+file_length:
+  warning: 600   # Reduced to encourage better file organization
+  error: 800
+  ignore_comment_only_lines: true
+
+# Cyclomatic complexity - Critical for code maintainability
+cyclomatic_complexity:
+  warning: 10    # Reduced for better code quality
+  error: 15
+  ignores_case_statements: true
+
+# Nesting level - Encourage flatter code structure
+nesting:
+  type_level: 3    # Reduced to discourage deep nesting
+  function_level: 4 # Reduced to discourage deep nesting
+
+# ============================================================================
+# SAFETY AND BEST PRACTICES - What SwiftLint does best
+# ============================================================================
+
+# Force unwrapping - Safety concern
+force_unwrapping:
+  severity: warning
+
+# Force casting - Safety concern  
+force_cast:
+  severity: warning
+
+# Weak delegates - Memory management
+weak_delegate: warning
+
+# Class delegate protocol - Best practice
+class_delegate_protocol: warning
+
+# Unused optional binding - Code cleanliness
+unused_optional_binding:
+  ignore_optional_try: true
+
+# Empty enum arguments - Code clarity
+empty_enum_arguments: warning
+
+# Redundant discardable let - Code cleanliness
+redundant_discardable_let: warning
+
+# ============================================================================
+# SWIFTUI SPECIFIC RULES
+# ============================================================================
+
+# SwiftUI previews can have any access control
+private_over_fileprivate:
+  validate_extensions: false
+
+# SwiftUI trailing closure style
+multiple_closures_with_trailing_closure:
+  severity: warning
+
+# ============================================================================
+# CUSTOM RULES - Project specific quality checks
+# ============================================================================
+
+custom_rules:
+  # Ensure camelCase naming (backup check)
+  snake_case_variables:
+    name: "Snake Case Variables"
+    regex: '(?:let|var)\s+([a-z]+_[a-z_]+)\s*[:=]'
+    match_kinds:
+      - identifier
+    message: "Variable names should use camelCase, not snake_case (will be auto-fixed by swift-format)"
+    severity: warning
+  
+  snake_case_functions:
+    name: "Snake Case Functions" 
+    regex: 'func\s+([a-z]+_[a-z_]+)\s*\('
+    match_kinds:
+      - identifier
+    message: "Function names should use camelCase, not snake_case"
+    severity: warning
+    
+  # TODO management - Allow but track technical debt
+  todo_with_context:
+    name: "TODO with Context"
+    regex: 'TODO:(?!\s*\w+)'
+    message: "TODOs should include context: TODO: [Person] Description"
+    severity: warning
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+# Reporter format - Xcode integration
+reporter: "xcode"
+
+# Warning threshold - Adjusted for code quality focus
+warning_threshold: 50  # Lower threshold since we're focusing on quality issues
+
+# ============================================================================
+# MIGRATION NOTES
+# ============================================================================
+# 
+# This configuration is designed for the hybrid SwiftLint + swift-format approach:
+# 
+# SwiftLint Focus Areas:
+# - Code complexity and structure
+# - Naming conventions and consistency  
+# - Safety (force unwrapping, memory management)
+# - Performance best practices
+# - SwiftUI specific patterns
+# 
+# swift-format Focus Areas (handled externally):
+# - Line length and wrapping
+# - Indentation and spacing
+# - Brace placement and alignment
+# - Import organization
+# - Argument list formatting
+#
+# To use with swift-format:
+# 1. Install Xcode 16+ (includes swift-format)
+# 2. Create .swift-format configuration file
+# 3. Use: swift format --configuration .swift-format <files>
+# 4. Or: Editor → Structure → Format File with 'swift-format' in Xcode
+#
+# Migration timeline:
+# - Phase 1: Use this SwiftLint config alone
+# - Phase 2: Add swift-format for formatting (Xcode 16+)
+# - Phase 3: Integrate both tools in CI/CD pipeline
