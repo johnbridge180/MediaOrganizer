@@ -171,23 +171,6 @@ PhotoGridView(
 - `minGridItemSize`: Minimum allowed item size
 - Responsive column calculation based on available width
 
-## Performance Characteristics
-
-### Memory Usage
-- Viewport-based loading keeps memory usage constant
-- Automatic cleanup of off-screen items
-- Separate queues prevent UI blocking
-
-### Scroll Performance  
-- Manual offsets enable smooth scrolling at any dataset size
-- Viewport tracking without per-item position monitoring
-- Debounced updates prevent excessive calculations
-
-### Animation Performance
-- Predictable positioning enables smooth SwiftUI animations
-- Offset changes animate automatically with `withAnimation`
-- No layout recalculation during animations
-
 ## Integration Points
 
 ### Data Source

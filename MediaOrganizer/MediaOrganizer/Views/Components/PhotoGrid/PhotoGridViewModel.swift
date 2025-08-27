@@ -55,7 +55,6 @@ class PhotoGridViewModel: ObservableObject {
         self.photoWidth = photoWidth
         self.zstackHeight = photoWidth*CGFloat(self.getNumRows(width: width, idealGridItemSize: idealGridItemSize, numCols: numCols))
 
-
         lastItemCount = currentItemCount
         lastWidth = width
         lastIdealSize = idealGridItemSize

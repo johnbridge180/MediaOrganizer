@@ -77,21 +77,26 @@ class MediaItemsViewModel: ObservableObject {
         var i=0
         var j=0
         while i<itemOrder.count, j<newItemOrder.count, let curItem = self.items[itemOrder[i]]?.item, let newItem=self.items[newItemOrder[j]]?.item {
-            if curItem.time>newItem.time {
+            if curItem.time > newItem.time {
                 itemOrder.remove(at: i)
-            } else if curItem.time==newItem.time {
-                if curItem._id==newItem._id {
-                    i+=1;j+=1
-                } else if let curItemHexval = UInt64(curItem._id.hex, radix: 16), let newItemHexval = UInt64(newItem._id.hex, radix: 16), curItemHexval>newItemHexval {
-                    itemOrder.remove(at: i)
-                } else {
-                    itemOrder.insert(newItem._id, at: i)
-                    i+=1;j+=1
-                }
-            } else {
-                itemOrder.insert(newItem._id, at: i)
-                i+=1;j+=1
+                continue
             }
+            
+            if curItem.time == newItem.time && curItem._id == newItem._id {
+                i+=1;j+=1
+                continue
+            }
+            
+            if curItem.time == newItem.time && 
+               let curItemHexval = UInt64(curItem._id.hex, radix: 16), 
+               let newItemHexval = UInt64(newItem._id.hex, radix: 16), 
+               curItemHexval > newItemHexval {
+                itemOrder.remove(at: i)
+                continue
+            }
+            
+            itemOrder.insert(newItem._id, at: i)
+            i+=1;j+=1
         }
         if i<itemOrder.count {
             itemOrder.removeSubrange(i...itemOrder.count-1)
@@ -112,6 +117,7 @@ class MediaItemsViewModel: ObservableObject {
         let lastScrollFrameUpdate = Date()
         let lastResizeUpdate=self.lastResizeUpdate
         self.lastScrollFrameUpdate = lastScrollFrameUpdate
+        // might want to use NSOperationQueue later (slightly less wasteful of CPU resources maybe?)
         self.updateTypeQueue.asyncAfter(deadline: .now() + Constants.scrollUpdateDelay) {
             if self.lastScrollFrameUpdate==lastScrollFrameUpdate && self.lastResizeUpdate==lastResizeUpdate {
                 self.setRangeValues(isScrollUpdate: true, zstackOriginY: frame.origin.y, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
