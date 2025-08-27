@@ -9,6 +9,13 @@ import SwiftUI
 
 class ThumbnailViewModel: ObservableObject {
     @AppStorage("api_endpoint_url") private var apiEndpointUrl: String = ""
+    
+    enum Constants {
+        static let tinyThumbnailWidth: CGFloat = 100.0
+        static let largeIconThreshold: CGFloat = 180.0
+        static let largeIconSize: CGFloat = 60.0
+        static let iconSizeDivider: CGFloat = 3.0
+    }
 
     var imageView: Image?
     var cgImage: CGImage?
@@ -38,7 +45,9 @@ class ThumbnailViewModel: ObservableObject {
                 let cacheURL = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
                 cachedImageLocation=cacheURL.appendingPathComponent(self.item._id.hex+".thumb."+(row.thumb_ext ?? "jpg"))
                 tinythumbLocation=cacheURL.appendingPathComponent(item._id.hex+".tiny."+(row.thumb_ext ?? "jpg"))
-            } catch {}
+            } catch {
+                print("Error setting up cache directories: \(error)")
+            }
         } else {
             isCached=false
         }
@@ -106,7 +115,7 @@ class ThumbnailViewModel: ObservableObject {
                 self.objectWillChange.send()
             }
         } catch {
-            print("file error: \(error)")
+            print("Error processing downloaded thumbnail for \(item._id.hex): \(error)")
         }
     }
     
@@ -118,9 +127,7 @@ class ThumbnailViewModel: ObservableObject {
         let savedURL = cacheURL.appendingPathComponent(item._id.hex + ".thumb." + fileExtension)
         cacheEntry.thumb_cached = true
         
-        try moveFileIfNeeded(from: fileURL, to: savedURL)
-        setImageIfNeeded(for: savedURL, type: 2)
-        try processTinyThumbnail(savedURL: savedURL, cacheURL: cacheURL, fileExtension: fileExtension, cacheEntry: cacheEntry)
+        try processCachedImage(from: fileURL, to: savedURL, cacheURL: cacheURL, fileExtension: fileExtension, cacheEntry: cacheEntry)
         
         cachedImageLocation = savedURL
         isCached = true
@@ -132,13 +139,16 @@ class ThumbnailViewModel: ObservableObject {
         let fileExt = cacheRow?.thumb_ext ?? "jpg"
         let savedURL = cacheURL.appendingPathComponent(item._id.hex + ".thumb." + fileExt)
         
-        try moveFileIfNeeded(from: fileURL, to: savedURL)
-        setImageIfNeeded(for: savedURL, type: 2)
+        try processCachedImage(from: fileURL, to: savedURL, cacheURL: cacheURL, fileExtension: fileExt, cacheEntry: cacheRow)
         cacheRow?.thumb_cached = true
         cachedImageLocation = savedURL
-        
-        try processTinyThumbnailForExisting(savedURL: savedURL, cacheURL: cacheURL, fileExt: fileExt)
         isCached = true
+    }
+    
+    private func processCachedImage(from sourceURL: URL, to destinationURL: URL, cacheURL: URL, fileExtension: String, cacheEntry: PreviewCache?) throws {
+        try moveFileIfNeeded(from: sourceURL, to: destinationURL)
+        setImageIfNeeded(for: destinationURL, type: 2)
+        try processTinyThumbnail(savedURL: destinationURL, cacheURL: cacheURL, fileExtension: fileExtension, cacheEntry: cacheEntry)
     }
     
     private func setupCacheEntry(_ cacheEntry: PreviewCache, fileExtension: String, response: URLResponse?, fileURL: URL) {
@@ -163,28 +173,23 @@ class ThumbnailViewModel: ObservableObject {
         }
     }
     
-    private func processTinyThumbnail(savedURL: URL, cacheURL: URL, fileExtension: String, cacheEntry: PreviewCache) throws {
+    private func processTinyThumbnail(savedURL: URL, cacheURL: URL, fileExtension: String, cacheEntry: PreviewCache?) throws {
         guard let tinyThumb = createTinyThumbnail(savedURL) else { return }
         
         let tinythumbURL = cacheURL.appendingPathComponent(item._id.hex + ".tiny." + fileExtension)
         try saveTinyThumbnail(tinyThumb, to: tinythumbURL)
         
-        cacheEntry.tiny_cached = true
-        cacheEntry.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
+        let fileSize = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
+        if let cacheEntry = cacheEntry {
+            cacheEntry.tiny_cached = true
+            cacheEntry.tiny_size = fileSize
+        } else {
+            cacheRow?.tiny_cached = true
+            cacheRow?.tiny_size = fileSize
+        }
+        
         tinythumbLocation = tinythumbURL
         setImageIfNeeded(for: tinythumbURL, type: 1)
-    }
-    
-    private func processTinyThumbnailForExisting(savedURL: URL, cacheURL: URL, fileExt: String) throws {
-        guard let tinyThumb = createTinyThumbnail(savedURL) else { return }
-        
-        let tinythumbURL = cacheURL.appendingPathComponent(item._id.hex + ".tiny." + fileExt)
-        try saveTinyThumbnail(tinyThumb, to: tinythumbURL)
-        
-        setImageIfNeeded(for: tinythumbURL, type: 1)
-        cacheRow?.tiny_cached = true
-        cacheRow?.tiny_size = Int64(try tinythumbURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
-        tinythumbLocation = tinythumbURL
     }
     
     private func saveTinyThumbnail(_ tinyThumb: CGImage, to url: URL) throws {
@@ -199,13 +204,11 @@ class ThumbnailViewModel: ObservableObject {
     // credit: https://medium.com/@zippicoder/downsampling-images-for-better-memory-consumption-and-uicollectionview-performance-35e0b4526425
     func createTinyThumbnail(_ url: URL) -> CGImage? {
 
-        let tinyThumbnailWidth: CGFloat = 100.0
-
         let imageSourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let imageSource = CGImageSourceCreateWithURL(url as CFURL, imageSourceOptions) else {
             return nil
         }
-        let maxDimensionInPixels = max(tinyThumbnailWidth, tinyThumbnailWidth) * (NSScreen.main?.backingScaleFactor ?? 1)
+        let maxDimensionInPixels = max(Constants.tinyThumbnailWidth, Constants.tinyThumbnailWidth) * (NSScreen.main?.backingScaleFactor ?? 1)
 
         let downsampleOptions = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,

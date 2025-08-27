@@ -47,7 +47,6 @@ class PhotoGridViewModel: ObservableObject {
             let currentItemSet = Set(mediaVModel.itemOrder)
             offsets = offsets.filter { currentItemSet.contains($0.key) }
             for i in 0..<currentItemCount {
-                print("i: \(i)")
                 offsets[mediaVModel.itemOrder[i]] = self.getOffset(for: i, width: width, numCols: numCols, colWidth: photoWidth)
             }
         }
@@ -55,7 +54,6 @@ class PhotoGridViewModel: ObservableObject {
         self.numCols = numCols
         self.photoWidth = photoWidth
         self.zstackHeight = photoWidth*CGFloat(self.getNumRows(width: width, idealGridItemSize: idealGridItemSize, numCols: numCols))
-
 
         lastItemCount = currentItemCount
         lastWidth = width

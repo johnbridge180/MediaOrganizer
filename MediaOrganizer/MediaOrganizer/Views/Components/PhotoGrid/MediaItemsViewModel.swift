@@ -11,6 +11,11 @@ import CoreData
 
 class MediaItemsViewModel: ObservableObject {
     static let lowresTriggerWidth = 100.0
+    
+    private enum Constants {
+        static let scrollUpdateDelay: Double = 0.2
+        static let resizeUpdateDelay: Double = 0.5
+    }
 
     let mongoHolder: MongoClientHolder
     let moc: NSManagedObjectContext
@@ -41,7 +46,6 @@ class MediaItemsViewModel: ObservableObject {
 
     @MainActor
     func fetchRows(limit: Int=0, filter: BSONDocument) async throws {
-        print("filter: \(filter)")
         isFetching = true
         if mongoHolder.client==nil {
             await mongoHolder.connect()
@@ -73,23 +77,26 @@ class MediaItemsViewModel: ObservableObject {
         var i=0
         var j=0
         while i<itemOrder.count, j<newItemOrder.count, let curItem = self.items[itemOrder[i]]?.item, let newItem=self.items[newItemOrder[j]]?.item {
-            if curItem.time>newItem.time {
+            if curItem.time > newItem.time {
                 itemOrder.remove(at: i)
-            } else if curItem.time==newItem.time {
-                if curItem._id==newItem._id {
-                    i+=1;j+=1
-                } else if let curItemHexval = UInt64(curItem._id.hex, radix: 16), let newItemHexval = UInt64(newItem._id.hex, radix: 16), curItemHexval>newItemHexval {
-                    itemOrder.remove(at: i)
-                } else {
-                    // curItem._id<newItem._id
-                    itemOrder.insert(newItem._id, at: i)
-                    i+=1;j+=1
-                }
-            } else {
-                // curItem.time<newItem.time
-                itemOrder.insert(newItem._id, at: i)
-                i+=1;j+=1
+                continue
             }
+            
+            if curItem.time == newItem.time && curItem._id == newItem._id {
+                i+=1;j+=1
+                continue
+            }
+            
+            if curItem.time == newItem.time && 
+               let curItemHexval = UInt64(curItem._id.hex, radix: 16), 
+               let newItemHexval = UInt64(newItem._id.hex, radix: 16), 
+               curItemHexval > newItemHexval {
+                itemOrder.remove(at: i)
+                continue
+            }
+            
+            itemOrder.insert(newItem._id, at: i)
+            i+=1;j+=1
         }
         if i<itemOrder.count {
             itemOrder.removeSubrange(i...itemOrder.count-1)
@@ -111,7 +118,7 @@ class MediaItemsViewModel: ObservableObject {
         let lastResizeUpdate=self.lastResizeUpdate
         self.lastScrollFrameUpdate = lastScrollFrameUpdate
         // might want to use NSOperationQueue later (slightly less wasteful of CPU resources maybe?)
-        self.updateTypeQueue.asyncAfter(deadline: .now()+0.2) {
+        self.updateTypeQueue.asyncAfter(deadline: .now() + Constants.scrollUpdateDelay) {
             if self.lastScrollFrameUpdate==lastScrollFrameUpdate && self.lastResizeUpdate==lastResizeUpdate {
                 self.setRangeValues(isScrollUpdate: true, zstackOriginY: frame.origin.y, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
             }
@@ -121,7 +128,7 @@ class MediaItemsViewModel: ObservableObject {
     func updateRangeValuesForResize(width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
         let lastResizeUpdate = Date()
         self.lastResizeUpdate = lastResizeUpdate
-        self.updateTypeQueue.asyncAfter(deadline: .now()+0.5) {
+        self.updateTypeQueue.asyncAfter(deadline: .now() + Constants.resizeUpdateDelay) {
             if self.lastResizeUpdate==lastResizeUpdate {
                 self.setRangeValues(zstackOriginY: self.lastSeenZStackOrigin, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
             }

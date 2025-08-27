@@ -33,92 +33,40 @@ struct PhotoGridView: View {
     @State var dragStart: CGPoint = CGPoint()
     @State var dragEnd: CGPoint = CGPoint()
 
-    init(idealGridItemSize: Binding<Double>, multiSelect: Binding<Bool>, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
-        self._idealGridItemSize=idealGridItemSize
-        self._multiSelect=multiSelect
-        self.minGridItemSize=minGridItemSize
-        self.limit=limit
-        self.filter=filter
+    init(idealGridItemSize: Binding<Double>, multiSelect: Binding<Bool>? = nil, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
+        self._idealGridItemSize = idealGridItemSize
+        self._multiSelect = multiSelect ?? Binding(get: { false }, set: { _ in })
+        self.minGridItemSize = minGridItemSize
+        self.limit = limit
+        self.filter = filter
         let mVmodel = MediaItemsViewModel(mongoHolder: mongoHolder, moc: PersistenceController.shared.container.viewContext, appDelegate: appDelegate)
-        self._mediaVModel=StateObject(wrappedValue: mVmodel)
-        self.scrollable=scrollable
-        self.horizontalScroll=horizontalScroll
-        self._gridViewModel=StateObject(wrappedValue: PhotoGridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
-    }
-
-    init(idealGridItemSize: Binding<Double>, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate, filter: BSONDocument, limit: Int=0, scrollable: Bool = true, horizontalScroll: Bool = false) {
-        let multiSelect: Binding<Bool> = Binding {
-            false
-        } set: { _ in
-
-        }
-        self._idealGridItemSize=idealGridItemSize
-        self._multiSelect=multiSelect
-        self.minGridItemSize=minGridItemSize
-        self.limit=limit
-        self.filter=filter
-        let mVmodel = MediaItemsViewModel(mongoHolder: mongoHolder, moc: PersistenceController.shared.container.viewContext, appDelegate: appDelegate)
-        self._mediaVModel=StateObject(wrappedValue: mVmodel)
-        self.scrollable=scrollable
-        self.horizontalScroll=horizontalScroll
-        self._gridViewModel=StateObject(wrappedValue: PhotoGridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
+        self._mediaVModel = StateObject(wrappedValue: mVmodel)
+        self.scrollable = scrollable
+        self.horizontalScroll = horizontalScroll
+        self._gridViewModel = StateObject(wrappedValue: PhotoGridViewModel(minGridItemSize: minGridItemSize, mediaViewModel: mVmodel))
     }
 
     var body: some View {
         GeometryReader { geometry in
             let grid = ZStack(alignment: .topLeading) {
                 Rectangle()
-                    .frame(width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count)*idealGridItemSize : geometry.size.width, height: horizontalScroll ? idealGridItemSize : gridViewModel.zstackHeight)
+                    .frame(
+                        width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count) * idealGridItemSize : geometry.size.width,
+                        height: horizontalScroll ? idealGridItemSize : gridViewModel.zstackHeight
+                    )
                     .opacity(0)
+                
                 ForEach(mediaVModel.itemOrder, id: \.hex) { object in
                     if let item = mediaVModel.items[object] {
                         let dimensions = item.item.getDisplayDimensions()
                         ZStack {
-                            mediaVModel.items[object]?.view
-                            if self.multiSelect {
+                            item.view
+                            if multiSelect {
                                 Button {
-                                    if NSEvent.modifierFlags.contains(.shift) && !self.selected.isEmpty {
-                                        guard let index = mediaVModel.itemOrder.firstIndex(of: item.item._id) else { return }
-                                        var i = index-1
-                                        var closestLeftIndex = -1
-                                        while i >= 0 {
-                                            if self.selected[mediaVModel.itemOrder[i]] != nil {
-                                                closestLeftIndex = i
-                                                break
-                                            }
-                                            i -= 1
-                                        }
-                                        i = index + 1
-                                        var closestRightIndex = -1
-                                        while i<mediaVModel.itemOrder.count {
-                                            if self.selected[mediaVModel.itemOrder[i]] != nil {
-                                                closestRightIndex = i
-                                                break
-                                            }
-                                            i += 1
-                                        }
-
-                                        if closestLeftIndex == -1 || (closestRightIndex != -1 && closestRightIndex-index < index-closestLeftIndex) {
-                                            for k in (index+1)...closestRightIndex {
-                                                self.selected[mediaVModel.itemOrder[k]] = true
-                                            }
-                                        } else {
-                                            for k in closestLeftIndex...(index-1) {
-                                                self.selected[mediaVModel.itemOrder[k]] = true
-                                            }
-                                        }
-                                        self.selected[item.item._id] = true
-                                    } else {
-                                        if self.selected[item.item._id] == nil {
-                                            self.selected[item.item._id] = true
-                                        } else {
-                                            self.selected.removeValue(forKey: item.item._id)
-                                        }
-                                    }
-
+                                    handleItemSelection(for: item.item._id)
                                 } label: {
                                     Image(systemName: selected[item.item._id] ?? false ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 180 < gridViewModel.photoWidth ? 60 : gridViewModel.photoWidth/3.0))
+                                        .font(.system(size: ThumbnailViewModel.Constants.largeIconThreshold < gridViewModel.photoWidth ? ThumbnailViewModel.Constants.largeIconSize : gridViewModel.photoWidth/ThumbnailViewModel.Constants.iconSizeDivider))
                                         .padding()
                                         .frame(
                                             width: dimensions.width >= dimensions.height ?
@@ -134,10 +82,10 @@ struct PhotoGridView: View {
                         .frame(width: gridViewModel.photoWidth, height: gridViewModel.photoWidth)
                         .offset(gridViewModel.offsets[object] ?? CGSize())
                         .contextMenu {
-                            if self.selected[item.item._id] == true {
-                                Button("Download \(self.selected.count) items") {
-                                    for (key, value) in self.selected where value {
-                                        if let mediaItem = self.mediaVModel.items[key] {
+                            if selected[item.item._id] == true {
+                                Button("Download \(selected.count) items") {
+                                    for (key, value) in selected where value {
+                                        if let mediaItem = mediaVModel.items[key] {
                                             DownloadManager.shared.download(mediaItem.item)
                                         }
                                     }
@@ -149,54 +97,63 @@ struct PhotoGridView: View {
                             }
                         }
                     }
-
                 }
+                
                 if dragging && !horizontalScroll {
                     Rectangle()
                         .fill(Color.blue.opacity(0.25))
                         .border(.blue)
-                        .frame(width: abs(self.dragEnd.x-self.dragStart.x), height: abs(self.dragEnd.y-self.dragStart.y))
-                        .offset(x: self.dragEnd.x > self.dragStart.x ? self.dragStart.x : self.dragEnd.x, y: self.dragEnd.y > self.dragStart.y ? self.dragStart.y : self.dragEnd.y)
+                        .frame(width: abs(dragEnd.x - dragStart.x), height: abs(dragEnd.y - dragStart.y))
+                        .offset(
+                            x: dragEnd.x > dragStart.x ? dragStart.x : dragEnd.x,
+                            y: dragEnd.y > dragStart.y ? dragStart.y : dragEnd.y
+                        )
                 }
             }
-                .contentShape(Rectangle())
-                .gesture(
-                        DragGesture()
-                        .onChanged({ value in
-                            self.dragging = true
-                            self.dragStart = value.startLocation
-                            self.dragEnd = value.location
-                        })
-                        .onEnded({ _ in
-                            let rectangle = (x1: self.dragEnd.x > self.dragStart.x ? self.dragStart.x : self.dragEnd.x, y1: self.dragEnd.y > self.dragStart.y ? self.dragStart.y : self.dragEnd.y, x2: self.dragEnd.x > self.dragStart.x ? self.dragEnd.x : self.dragStart.x, y2: self.dragEnd.y > self.dragStart.y ? self.dragEnd.y : self.dragStart.y)
-                            if !(rectangle.x1 == 0 && rectangle.y1==0 && rectangle.x2==0 && rectangle.y2==0) {
-                                if !NSEvent.modifierFlags.contains(.command) {
-                                    self.selected = [:]
-                                }
-                                self.multiSelect = true
-                                let photosInRectangle = gridViewModel.getPhotosInRectangle(rectangle)
-                                for selectedObjectID in photosInRectangle {
-                                    self.selected[selectedObjectID] = true
-                                }
-
-                                self.dragging = false
-                                self.dragStart = CGPoint()
-                                self.dragEnd = CGPoint()
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        dragging = true
+                        dragStart = value.startLocation
+                        dragEnd = value.location
+                    }
+                    .onEnded { _ in
+                        let rectangle = (
+                            x1: dragEnd.x > dragStart.x ? dragStart.x : dragEnd.x,
+                            y1: dragEnd.y > dragStart.y ? dragStart.y : dragEnd.y,
+                            x2: dragEnd.x > dragStart.x ? dragEnd.x : dragStart.x,
+                            y2: dragEnd.y > dragStart.y ? dragEnd.y : dragStart.y
+                        )
+                        
+                        if !(rectangle.x1 == 0 && rectangle.y1 == 0 && rectangle.x2 == 0 && rectangle.y2 == 0) {
+                            if !NSEvent.modifierFlags.contains(.command) {
+                                selected = [:]
                             }
-                        })
-                )
+                            multiSelect = true
+                            let photosInRectangle = gridViewModel.getPhotosInRectangle(rectangle)
+                            for selectedObjectID in photosInRectangle {
+                                selected[selectedObjectID] = true
+                            }
+                        }
+                        
+                        dragging = false
+                        dragStart = CGPoint()
+                        dragEnd = CGPoint()
+                    }
+            )
 
             VStack {
                 if scrollable {
                     ScrollView(horizontalScroll ? .horizontal : .vertical, showsIndicators: true) {
-                            grid
-                                .onFrameChange { frame in
-                                    if !horizontalScroll {
-                                        mediaVModel.onScrollFrameUpdate(frame, width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
-                                    }
+                        grid
+                            .onFrameChange { frame in
+                                if !horizontalScroll {
+                                    mediaVModel.onScrollFrameUpdate(frame, width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
                                 }
+                            }
                     }
-                } else /*if(!mediaVModel.isFetching)*/ {
+                } else {
                     grid
                 }
             }
@@ -230,16 +187,70 @@ struct PhotoGridView: View {
                         gridViewModel.setOffsets(width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count)*idealGridItemSize : geometry.size.width, idealGridItemSize: idealGridItemSize)
 
                         mediaVModel.setRangeValues(zstackOriginY: 0, width: horizontalScroll ? CGFloat(mediaVModel.itemOrder.count)*idealGridItemSize : geometry.size.width, height: horizontalScroll ? idealGridItemSize : geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
-                    } catch {}
+                    } catch {
+                        print("Error fetching media items: \(error)")
+                    }
                 }
             }
             .onDisappear {
                 do {
                     try moc.save()
-                } catch {}
+                } catch {
+                    print("Error saving managed object context: \(error)")
+                }
             }
         }
         .frame(minWidth: 300, minHeight: scrollable ? 0 : gridViewModel.zstackHeight)
+    }
+    
+    // MARK: - Selection Logic
+    
+    private func handleItemSelection(for itemId: BSONObjectID) {
+        if NSEvent.modifierFlags.contains(.shift) && !selected.isEmpty {
+            handleShiftSelection(for: itemId)
+        } else {
+            toggleItemSelection(for: itemId)
+        }
+    }
+    
+    private func handleShiftSelection(for itemId: BSONObjectID) {
+        guard let index = mediaVModel.itemOrder.firstIndex(of: itemId) else { return }
+        
+        let closestLeftIndex = findClosestSelectedIndex(from: index, direction: -1)
+        let closestRightIndex = findClosestSelectedIndex(from: index, direction: 1)
+        
+        if closestLeftIndex == -1 || (closestRightIndex != -1 && closestRightIndex - index < index - closestLeftIndex) {
+            selectRange(from: index + 1, to: closestRightIndex)
+        } else {
+            selectRange(from: closestLeftIndex, to: index - 1)
+        }
+        selected[itemId] = true
+    }
+    
+    private func findClosestSelectedIndex(from startIndex: Int, direction: Int) -> Int {
+        var i = startIndex + direction
+        while i >= 0 && i < mediaVModel.itemOrder.count {
+            if selected[mediaVModel.itemOrder[i]] != nil {
+                return i
+            }
+            i += direction
+        }
+        return -1
+    }
+    
+    private func selectRange(from start: Int, to end: Int) {
+        guard start >= 0 && end < mediaVModel.itemOrder.count && start <= end else { return }
+        for k in start...end {
+            selected[mediaVModel.itemOrder[k]] = true
+        }
+    }
+    
+    private func toggleItemSelection(for itemId: BSONObjectID) {
+        if selected[itemId] == nil {
+            selected[itemId] = true
+        } else {
+            selected.removeValue(forKey: itemId)
+        }
     }
 }
 
