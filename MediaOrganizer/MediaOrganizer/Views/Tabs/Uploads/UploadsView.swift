@@ -28,6 +28,8 @@ struct UploadsView: View {
     @Binding var sliderDisabled: Bool
 
     @State var expandedUpload: Upload?
+    
+    @AppStorage("api_endpoint_url") private var apiEndpointUrl: String = ""
 
     init(idealGridItemSize: Binding<Double>, sliderDisabled: Binding<Bool>, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate) {
         self.mongoHolder=mongoHolder
@@ -39,6 +41,15 @@ struct UploadsView: View {
         self.dateFormatter=DateFormatter()
         dateFormatter.dateStyle = .medium
         dateFormatter.timeStyle = .short
+    }
+    
+    private func createDataSource(for upload: Upload, horizontal: Bool = false) -> MongoPhotoGridDataSource {
+        return MongoPhotoGridDataSource(
+            mongoHolder: mongoHolder,
+            filter: ["upload_id": .objectID(upload._id)],
+            limit: 0,
+            apiEndpointUrl: apiEndpointUrl
+        )
     }
 
     var body: some View {
@@ -68,8 +79,35 @@ struct UploadsView: View {
                         .fill(.separator)
                         .frame(maxWidth: .infinity, maxHeight: 2)
                         .padding(EdgeInsets(top: -5, leading: 15, bottom: 0, trailing: 0))
-                    PhotoGridView(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongoHolder: mongoHolder, appDelegate: appDelegate, filter: ["upload_id": .objectID(upload._id)], horizontalScroll: false)
-                        .frame(width: geometry.size.width)
+                    ReusablePhotoGrid(
+                        dataSource: createDataSource(for: upload),
+                        idealGridItemSize: $idealGridItemSize,
+                        multiSelectEnabled: .constant(false),
+                        minGridItemSize: minGridItemSize,
+                        scrollDirection: .vertical,
+                        dragSelectEnabled: false,
+                        onPhotoTap: { item in
+                            if let mediaItem = createDataSource(for: upload).getMediaItem(for: item.id) {
+                                appDelegate.openMediaItemDetailWindow(
+                                    rect: CGRect(x: 0, y: 0, width: 1500, height: 1000),
+                                    item: mediaItem,
+                                    initialThumb: nil,
+                                    orientation: .up
+                                )
+                            }
+                        },
+                        contextActions: [
+                            PhotoGridAction(title: "Download") { items in
+                                let dataSource = createDataSource(for: upload)
+                                for item in items {
+                                    if let mediaItem = dataSource.getMediaItem(for: item.id) {
+                                        DownloadManager.shared.download(mediaItem)
+                                    }
+                                }
+                            }
+                        ]
+                    )
+                    .frame(width: geometry.size.width)
                 }
             } else {
                 ScrollView(.vertical) {
@@ -112,8 +150,35 @@ struct UploadsView: View {
                                         .fill(.separator)
                                         .frame(maxWidth: .infinity, maxHeight: 2)
                                         .padding(EdgeInsets(top: -5, leading: 15, bottom: 0, trailing: 0))
-                                    PhotoGridView(idealGridItemSize: $idealGridItemSize, minGridItemSize: minGridItemSize, mongoHolder: mongoHolder, appDelegate: appDelegate, filter: ["upload_id": .objectID(upload._id)], horizontalScroll: true)
-                                        .frame(width: geometry.size.width, height: CGFloat(idealGridItemSize))
+                                    ReusablePhotoGrid(
+                                        dataSource: createDataSource(for: upload, horizontal: true),
+                                        idealGridItemSize: $idealGridItemSize,
+                                        multiSelectEnabled: .constant(false),
+                                        minGridItemSize: minGridItemSize,
+                                        scrollDirection: .horizontal,
+                                        dragSelectEnabled: false,
+                                        onPhotoTap: { item in
+                                            if let mediaItem = createDataSource(for: upload).getMediaItem(for: item.id) {
+                                                appDelegate.openMediaItemDetailWindow(
+                                                    rect: CGRect(x: 0, y: 0, width: 1500, height: 1000),
+                                                    item: mediaItem,
+                                                    initialThumb: nil,
+                                                    orientation: .up
+                                                )
+                                            }
+                                        },
+                                        contextActions: [
+                                            PhotoGridAction(title: "Download") { items in
+                                                let dataSource = createDataSource(for: upload)
+                                                for item in items {
+                                                    if let mediaItem = dataSource.getMediaItem(for: item.id) {
+                                                        DownloadManager.shared.download(mediaItem)
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    )
+                                    .frame(width: geometry.size.width, height: CGFloat(idealGridItemSize))
                                 }
                             }
                         }

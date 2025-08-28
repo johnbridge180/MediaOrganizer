@@ -31,6 +31,7 @@
 		FC78DEA4295E546B009F3F27 /* UploadsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */; };
 		FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */; };
 		FC78DEA82964AEA7009F3F27 /* View+onFrameChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */; };
+		FC78DEA92E6C83F000C0D641 /* ReusablePhotoGridComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA82E6C83F000C0D641 /* ReusablePhotoGridComponents.swift */; };
 		FC9F21AD00000023 /* PhotosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000019 /* PhotosView.swift */; };
 		FC9F21AD00000024 /* EventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000020 /* EventsView.swift */; };
 		FCD57DEA295A68700050C6F0 /* MediaItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCD57DE9295A68700050C6F0 /* MediaItemDetailView.swift */; };
@@ -103,6 +104,7 @@
 		FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadsViewModel.swift; sourceTree = "<group>"; };
 		FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
 		FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+onFrameChange.swift"; sourceTree = "<group>"; };
+		FC78DEA82E6C83F000C0D641 /* ReusablePhotoGridComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReusablePhotoGridComponents.swift; sourceTree = "<group>"; };
 		FC9F21AD00000019 /* PhotosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosView.swift; sourceTree = "<group>"; };
 		FC9F21AD00000020 /* EventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsView.swift; sourceTree = "<group>"; };
 		FCC5FC30289B67E200617A0E /* organizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = organizer.h; sourceTree = "<group>"; };
@@ -324,6 +326,7 @@
 				FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */,
 				FC78100E2967D93E00C0D641 /* PhotoGridViewModel.swift */,
 				FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */,
+				FC78DEA82E6C83F000C0D641 /* ReusablePhotoGridComponents.swift */,
 			);
 			path = PhotoGrid;
 			sourceTree = "<group>";
@@ -615,6 +618,7 @@
 				FCFA10B828ACBC3B009A5A65 /* Persistence.swift in Sources */,
 				FCD57DEA295A68700050C6F0 /* MediaItemDetailView.swift in Sources */,
 				FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */,
+				FC78DEA92E6C83F000C0D641 /* ReusablePhotoGridComponents.swift in Sources */,
 				FC39B92029577FCA003F3648 /* ThumbnailView.swift in Sources */,
 				FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */,
 				FC455E48296A1B730013E88E /* MediaItem.swift in Sources */,
