@@ -16,17 +16,14 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     @ObservedObject var dataSource: DataSource
     @StateObject private var gridViewModel: ReusablePhotoGridViewModel
     
-    // Configuration properties
-    @State private var idealGridItemSize: Double = 100
-    @State private var multiSelectEnabled: Bool = false
-    private let minGridItemSize: Double
-    private let scrollable: Bool
-    private let scrollDirection: PhotoGridScrollDirection
-    
-    // Callbacks
-    private var onPhotoTap: ((PhotoGridItem) -> Void)?
-    private var contextActions: [PhotoGridAction] = []
-    private var dragSelectEnabled: Bool = false
+    @Binding var idealGridItemSize: Double
+    @Binding var multiSelectEnabled: Bool
+    let minGridItemSize: Double
+    let scrollable: Bool
+    let scrollDirection: PhotoGridScrollDirection
+    let dragSelectEnabled: Bool
+    let onPhotoTap: ((PhotoGridItem) -> Void)?
+    let contextActions: [PhotoGridAction]
     
     // Selection state
     @State private var selected: [String: Bool] = [:]
@@ -36,11 +33,26 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     @State private var dragStart: CGPoint = CGPoint()
     @State private var dragEnd: CGPoint = CGPoint()
     
-    init(dataSource: DataSource, minGridItemSize: Double = 50.0, scrollable: Bool = true, scrollDirection: PhotoGridScrollDirection = .vertical) {
+    init(
+        dataSource: DataSource,
+        idealGridItemSize: Binding<Double>,
+        multiSelectEnabled: Binding<Bool> = .constant(false),
+        minGridItemSize: Double = 50.0,
+        scrollable: Bool = true,
+        scrollDirection: PhotoGridScrollDirection = .vertical,
+        dragSelectEnabled: Bool = false,
+        onPhotoTap: ((PhotoGridItem) -> Void)? = nil,
+        contextActions: [PhotoGridAction] = []
+    ) {
         self.dataSource = dataSource
+        self._idealGridItemSize = idealGridItemSize
+        self._multiSelectEnabled = multiSelectEnabled
         self.minGridItemSize = minGridItemSize
         self.scrollable = scrollable
         self.scrollDirection = scrollDirection
+        self.dragSelectEnabled = dragSelectEnabled
+        self.onPhotoTap = onPhotoTap
+        self.contextActions = contextActions
         self._gridViewModel = StateObject(wrappedValue: ReusablePhotoGridViewModel(minGridItemSize: minGridItemSize))
     }
     
@@ -261,43 +273,6 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     }
 }
 
-// MARK: - Modifiers
-
-extension ReusablePhotoGrid {
-    func idealGridItemSize(_ size: Binding<Double>) -> some View {
-        var modified = self
-        modified._idealGridItemSize = State(wrappedValue: size.wrappedValue)
-        return modified.onChange(of: size.wrappedValue) { newValue in
-            modified.idealGridItemSize = newValue
-        }
-    }
-    
-    func multiSelectEnabled(_ enabled: Binding<Bool>) -> some View {
-        var modified = self
-        modified._multiSelectEnabled = State(wrappedValue: enabled.wrappedValue)
-        return modified.onChange(of: enabled.wrappedValue) { newValue in
-            modified.multiSelectEnabled = newValue
-        }
-    }
-    
-    func onPhotoTap(_ handler: @escaping (PhotoGridItem) -> Void) -> ReusablePhotoGrid {
-        var modified = self
-        modified.onPhotoTap = handler
-        return modified
-    }
-    
-    func contextActions(_ actions: [PhotoGridAction]) -> ReusablePhotoGrid {
-        var modified = self
-        modified.contextActions = actions
-        return modified
-    }
-    
-    func dragSelectEnabled(_ enabled: Bool) -> ReusablePhotoGrid {
-        var modified = self
-        modified.dragSelectEnabled = enabled
-        return modified
-    }
-}
 
 struct SelectionButtonStyle: ButtonStyle {
     let selected: Bool

@@ -8,6 +8,23 @@
 import Foundation
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+typealias UIImage = NSImage
+
+extension NSImage {
+    func jpegRepresentation(compressionFactor: CGFloat) -> Data? {
+        guard let tiffData = self.tiffRepresentation,
+              let bitmapImage = NSBitmapImageRep(data: tiffData) else {
+            return nil
+        }
+        return bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: compressionFactor])
+    }
+}
+#endif
+
 class PhotoGridThumbnailCache {
     static let shared = PhotoGridThumbnailCache()
     
@@ -82,7 +99,12 @@ class PhotoGridThumbnailCache {
             let thumbnail = await createThumbnail(from: originalImage, size: size)
             
             // Cache to disk
-            if let thumbnailData = thumbnail.jpegData(compressionQuality: 0.8) {
+            #if canImport(UIKit)
+            let thumbnailData = thumbnail.jpegData(compressionQuality: 0.8)
+            #else
+            let thumbnailData = thumbnail.jpegRepresentation(compressionFactor: 0.8)
+            #endif
+            if let thumbnailData = thumbnailData {
                 let fileURL = cacheDirectory.appendingPathComponent("\(cacheKey).jpg")
                 try? thumbnailData.write(to: fileURL)
                 
@@ -103,10 +125,19 @@ class PhotoGridThumbnailCache {
     
     @MainActor
     private func createThumbnail(from image: UIImage, size: CGSize) -> UIImage {
+        #if canImport(UIKit)
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: size))
         }
+        #else
+        let targetRect = NSRect(origin: .zero, size: size)
+        let thumbnailImage = NSImage(size: size)
+        thumbnailImage.lockFocus()
+        image.draw(in: targetRect, from: NSRect(origin: .zero, size: image.size), operation: .sourceOver, fraction: 1.0)
+        thumbnailImage.unlockFocus()
+        return thumbnailImage
+        #endif
     }
     
     private func cacheKey(for item: PhotoGridItem, size: CGSize) -> String {

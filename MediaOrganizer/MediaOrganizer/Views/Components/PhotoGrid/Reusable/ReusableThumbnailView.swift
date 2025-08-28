@@ -7,6 +7,13 @@
 
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+typealias UIImage = NSImage
+#endif
+
 struct ReusableThumbnailView: View {
     let item: PhotoGridItem
     let size: CGSize

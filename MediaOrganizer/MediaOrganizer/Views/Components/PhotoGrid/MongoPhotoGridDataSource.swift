@@ -17,13 +17,19 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
     private let mongoHolder: MongoClientHolder
     private let filter: BSONDocument
     private let limit: Int
-    private let apiEndpointUrl: String
+    private(set) var apiEndpointUrl: String
+    
+    private var mediaItemLookup: [String: MediaItem] = [:]
     
     init(mongoHolder: MongoClientHolder, filter: BSONDocument, limit: Int = 0, apiEndpointUrl: String) {
         self.mongoHolder = mongoHolder
         self.filter = filter
         self.limit = limit
         self.apiEndpointUrl = apiEndpointUrl
+    }
+    
+    func getMediaItem(for itemId: String) -> MediaItem? {
+        return mediaItemLookup[itemId]
     }
     
     @MainActor
@@ -52,6 +58,7 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
                 let imageURL = createImageURL(for: item)
                 let photoGridItem = PhotoGridItem(id: item._id.hex, imageURL: imageURL)
                 newItems.append(photoGridItem)
+                mediaItemLookup[item._id.hex] = item
             }
         }
         
