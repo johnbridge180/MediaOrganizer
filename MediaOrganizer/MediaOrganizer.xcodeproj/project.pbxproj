@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		FC39B91E29577D87003F3648 /* MongoSwift in Frameworks */ = {isa = PBXBuildFile; productRef = FC39B91D29577D87003F3648 /* MongoSwift */; };
 		FC39B92029577FCA003F3648 /* ThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B91F29577FCA003F3648 /* ThumbnailView.swift */; };
-		FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */; };
 		FC39B924295783C5003F3648 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B923295783C5003F3648 /* SettingsView.swift */; };
 		FC39B92D2958F758003F3648 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B92C2958F758003F3648 /* GeneralSettingsView.swift */; };
 		FC39B92F2958F828003F3648 /* ServerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC39B92E2958F828003F3648 /* ServerSettingsView.swift */; };
@@ -26,10 +25,8 @@
 		FC5DD5B6289EADE400456566 /* image_tools.c in Sources */ = {isa = PBXBuildFile; fileRef = FC5DD5B5289EADE400456566 /* image_tools.c */; };
 		FC673FD32E5A575800CC2113 /* DownloadOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC673FD22E5A575800CC2113 /* DownloadOperation.swift */; };
 		FC78100D2967CD1400C0D641 /* ThumbnailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100C2967CD1400C0D641 /* ThumbnailViewModel.swift */; };
-		FC78100F2967D93E00C0D641 /* PhotoGridViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78100E2967D93E00C0D641 /* PhotoGridViewModel.swift */; };
 		FC78DEA2295E5395009F3F27 /* UploadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA1295E5395009F3F27 /* UploadsView.swift */; };
 		FC78DEA4295E546B009F3F27 /* UploadsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */; };
-		FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */; };
 		FC78DEA82964AEA7009F3F27 /* View+onFrameChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */; };
 		FC78DEA92E6C83F000C0D641 /* ReusablePhotoGridComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC78DEA82E6C83F000C0D641 /* ReusablePhotoGridComponents.swift */; };
 		FC9F21AD00000023 /* PhotosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9F21AD00000019 /* PhotosView.swift */; };
@@ -79,7 +76,6 @@
 
 /* Begin PBXFileReference section */
 		FC39B91F29577FCA003F3648 /* ThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailView.swift; sourceTree = "<group>"; };
-		FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemsViewModel.swift; sourceTree = "<group>"; };
 		FC39B923295783C5003F3648 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		FC39B92C2958F758003F3648 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		FC39B92E2958F828003F3648 /* ServerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSettingsView.swift; sourceTree = "<group>"; };
@@ -99,10 +95,8 @@
 		FC5DD5B5289EADE400456566 /* image_tools.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = image_tools.c; sourceTree = "<group>"; };
 		FC673FD22E5A575800CC2113 /* DownloadOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadOperation.swift; sourceTree = "<group>"; };
 		FC78100C2967CD1400C0D641 /* ThumbnailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailViewModel.swift; sourceTree = "<group>"; };
-		FC78100E2967D93E00C0D641 /* PhotoGridViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridViewModel.swift; sourceTree = "<group>"; };
 		FC78DEA1295E5395009F3F27 /* UploadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadsView.swift; sourceTree = "<group>"; };
 		FC78DEA3295E546B009F3F27 /* UploadsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadsViewModel.swift; sourceTree = "<group>"; };
-		FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
 		FC78DEA72964AEA7009F3F27 /* View+onFrameChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+onFrameChange.swift"; sourceTree = "<group>"; };
 		FC78DEA82E6C83F000C0D641 /* ReusablePhotoGridComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReusablePhotoGridComponents.swift; sourceTree = "<group>"; };
 		FC9F21AD00000019 /* PhotosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosView.swift; sourceTree = "<group>"; };
@@ -323,9 +317,6 @@
 		FC9F21AD00000015 /* PhotoGrid */ = {
 			isa = PBXGroup;
 			children = (
-				FC78DEA5295F44AF009F3F27 /* PhotoGridView.swift */,
-				FC78100E2967D93E00C0D641 /* PhotoGridViewModel.swift */,
-				FC39B9212957830F003F3648 /* MediaItemsViewModel.swift */,
 				FC78DEA82E6C83F000C0D641 /* ReusablePhotoGridComponents.swift */,
 			);
 			path = PhotoGrid;
@@ -617,10 +608,8 @@
 				FC78100D2967CD1400C0D641 /* ThumbnailViewModel.swift in Sources */,
 				FCFA10B828ACBC3B009A5A65 /* Persistence.swift in Sources */,
 				FCD57DEA295A68700050C6F0 /* MediaItemDetailView.swift in Sources */,
-				FC78DEA6295F44AF009F3F27 /* PhotoGridView.swift in Sources */,
 				FC78DEA92E6C83F000C0D641 /* ReusablePhotoGridComponents.swift in Sources */,
 				FC39B92029577FCA003F3648 /* ThumbnailView.swift in Sources */,
-				FC39B9222957830F003F3648 /* MediaItemsViewModel.swift in Sources */,
 				FC455E48296A1B730013E88E /* MediaItem.swift in Sources */,
 				FCFA10B128ACBC3B009A5A65 /* ContentView.swift in Sources */,
 				FC39B934295A244F003F3648 /* MongoClientHolder.swift in Sources */,
@@ -629,7 +618,6 @@
 				FC455E4E296A8DE80013E88E /* DownloadManager.swift in Sources */,
 				FC78DEA2295E5395009F3F27 /* UploadsView.swift in Sources */,
 				FCF69761296BC7D600F2093D /* DownloadOverlayPanel.swift in Sources */,
-				FC78100F2967D93E00C0D641 /* PhotoGridViewModel.swift in Sources */,
 				FC455E4C296A83A40013E88E /* DownloadModel.swift in Sources */,
 				FC455E46296A0A4D0013E88E /* Tools.swift in Sources */,
 				FC9F21AD00000023 /* PhotosView.swift in Sources */,

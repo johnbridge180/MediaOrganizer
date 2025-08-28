@@ -125,8 +125,41 @@ class PhotoGridThumbnailCache {
     
     private func loadAndCacheImage(for item: PhotoGridItem, size: CGSize, cacheKey: String) async -> NSImage? {
         do {
-            let (data, _) = try await URLSession.shared.data(from: item.imageURL)
-            guard let originalImage = NSImage(data: data) else { return nil }
+            print("Attempting to load image from URL: \(item.imageURL)")
+            let (data, response) = try await URLSession.shared.data(from: item.imageURL)
+            
+            // Check HTTP response
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status: \(httpResponse.statusCode) for URL: \(item.imageURL)")
+                guard httpResponse.statusCode == 200 else {
+                    print("HTTP Error \(httpResponse.statusCode) for \(item.imageURL)")
+                    return nil
+                }
+            }
+            
+            print("Received \(data.count) bytes for item \(item.id)")
+            
+            // Check if data looks like an image
+            if data.count < 100 {
+                print("Data too small (\(data.count) bytes), might be an error response")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("Response content: \(responseString)")
+                }
+                return nil
+            }
+            
+            guard let originalImage = NSImage(data: data) else {
+                print("Failed to create NSImage from \(data.count) bytes for item \(item.id)")
+                return nil
+            }
+            
+            // Check if image has valid size
+            guard originalImage.size.width > 0 && originalImage.size.height > 0 else {
+                print("Original image has zero size: \(originalImage.size) for item \(item.id)")
+                return nil
+            }
+            
+            print("Successfully created NSImage with size \(originalImage.size) for item \(item.id)")
             
             let thumbnail = await createThumbnail(from: originalImage, size: size)
             
@@ -153,8 +186,27 @@ class PhotoGridThumbnailCache {
     
     @MainActor
     private func createThumbnail(from image: NSImage, size: CGSize) -> NSImage {
+        // Ensure valid input size
+        guard size.width > 0 && size.height > 0 else {
+            print("Invalid thumbnail size: \(size)")
+            return NSImage(size: CGSize(width: 1, height: 1)) // Return a minimal valid image
+        }
+        
+        // Ensure source image has valid size
+        guard image.size.width > 0 && image.size.height > 0 else {
+            print("Invalid source image size: \(image.size)")
+            return NSImage(size: CGSize(width: 1, height: 1)) // Return a minimal valid image
+        }
+        
         let targetRect = NSRect(origin: .zero, size: size)
         let thumbnailImage = NSImage(size: size)
+        
+        // Check if thumbnail image was created successfully
+        guard thumbnailImage.size.width > 0 && thumbnailImage.size.height > 0 else {
+            print("Failed to create thumbnail image with size: \(size)")
+            return NSImage(size: CGSize(width: 1, height: 1)) // Return a minimal valid image
+        }
+        
         thumbnailImage.lockFocus()
         image.draw(in: targetRect, from: NSRect(origin: .zero, size: image.size), operation: .sourceOver, fraction: 1.0)
         thumbnailImage.unlockFocus()
@@ -261,7 +313,14 @@ struct ReusableThumbnailView: View {
         isLoading = true
         defer { isLoading = false }
         
+        print("Loading image for item: \(item.id) from URL: \(item.imageURL)")
         image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, size: size)
+        
+        if image == nil {
+            print("Failed to load image for item: \(item.id)")
+        } else {
+            print("Successfully loaded image for item: \(item.id)")
+        }
     }
 }
 
@@ -675,11 +734,14 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
         isLoading = true
         defer { isLoading = false }
         
+        print("MongoPhotoGridDataSource: Starting to load items with filter: \(filter)")
+        
         if mongoHolder.client == nil {
             await mongoHolder.connect()
         }
         
         guard let client = mongoHolder.client else { 
+            print("MongoPhotoGridDataSource: Failed to get MongoDB client")
             throw PhotoGridError.connectionFailed
         }
         
@@ -700,6 +762,7 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
             }
         }
         
+        print("MongoPhotoGridDataSource: Loaded \(newItems.count) items")
         items = newItems
     }
     
@@ -709,7 +772,7 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
     
     private func createImageURL(for mediaItem: MediaItem) -> URL {
         let baseURL = apiEndpointUrl.isEmpty ? "http://localhost:8080" : apiEndpointUrl
-        let urlString = "\(baseURL)/api/files/\(mediaItem._id.hex)/thumbnail"
+        let urlString = "\(baseURL)?request=thumbnail&oid=\(mediaItem._id.hex)"
         return URL(string: urlString) ?? URL(fileURLWithPath: "/dev/null")
     }
 }
