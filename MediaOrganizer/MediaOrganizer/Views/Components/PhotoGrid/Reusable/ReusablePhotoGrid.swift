@@ -273,7 +273,6 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     }
 }
 
-
 struct SelectionButtonStyle: ButtonStyle {
     let selected: Bool
     

@@ -87,9 +87,9 @@ class MediaItemsViewModel: ObservableObject {
                 continue
             }
             
-            if curItem.time == newItem.time && 
-               let curItemHexval = UInt64(curItem._id.hex, radix: 16), 
-               let newItemHexval = UInt64(newItem._id.hex, radix: 16), 
+            if curItem.time == newItem.time,
+               let curItemHexval = UInt64(curItem._id.hex, radix: 16),
+               let newItemHexval = UInt64(newItem._id.hex, radix: 16),
                curItemHexval > newItemHexval {
                 itemOrder.remove(at: i)
                 continue
