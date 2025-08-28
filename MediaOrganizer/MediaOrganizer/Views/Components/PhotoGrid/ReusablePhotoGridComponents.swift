@@ -10,11 +10,7 @@ import SwiftUI
 import SwiftBSON
 import MongoSwift
 
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
 import AppKit
-typealias UIImage = NSImage
 
 extension NSImage {
     func jpegRepresentation(compressionFactor: CGFloat) -> Data? {
@@ -25,7 +21,6 @@ extension NSImage {
         return bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: compressionFactor])
     }
 }
-#endif
 
 // MARK: - PhotoGridItem
 struct PhotoGridItem: Identifiable, Hashable {
@@ -65,7 +60,7 @@ protocol PhotoGridDataSource: ObservableObject {
 class PhotoGridThumbnailCache {
     static let shared = PhotoGridThumbnailCache()
     
-    private let memoryCache = NSCache<NSString, UIImage>()
+    private let memoryCache = NSCache<NSString, NSImage>()
     private let cacheDirectory: URL
     private let metadataURL: URL
     private var cacheMetadata: CacheMetadata
@@ -104,7 +99,7 @@ class PhotoGridThumbnailCache {
         memoryCache.countLimit = 1000 // Max 1000 images in memory
     }
     
-    func getThumbnail(for item: PhotoGridItem, size: CGSize) async -> UIImage? {
+    func getThumbnail(for item: PhotoGridItem, size: CGSize) async -> NSImage? {
         let cacheKey = cacheKey(for: item, size: size)
         
         // Check memory cache first
@@ -116,7 +111,7 @@ class PhotoGridThumbnailCache {
         let fileURL = cacheDirectory.appendingPathComponent("\(cacheKey).jpg")
         if FileManager.default.fileExists(atPath: fileURL.path),
            let data = try? Data(contentsOf: fileURL),
-           let image = UIImage(data: data) {
+           let image = NSImage(data: data) {
             
             // Add to memory cache
             let cost = Int(data.count)
@@ -128,19 +123,15 @@ class PhotoGridThumbnailCache {
         return await loadAndCacheImage(for: item, size: size, cacheKey: cacheKey)
     }
     
-    private func loadAndCacheImage(for item: PhotoGridItem, size: CGSize, cacheKey: String) async -> UIImage? {
+    private func loadAndCacheImage(for item: PhotoGridItem, size: CGSize, cacheKey: String) async -> NSImage? {
         do {
             let (data, _) = try await URLSession.shared.data(from: item.imageURL)
-            guard let originalImage = UIImage(data: data) else { return nil }
+            guard let originalImage = NSImage(data: data) else { return nil }
             
             let thumbnail = await createThumbnail(from: originalImage, size: size)
             
             // Cache to disk
-            #if canImport(UIKit)
-            let thumbnailData = thumbnail.jpegData(compressionQuality: 0.8)
-            #else
             let thumbnailData = thumbnail.jpegRepresentation(compressionFactor: 0.8)
-            #endif
             if let thumbnailData = thumbnailData {
                 let fileURL = cacheDirectory.appendingPathComponent("\(cacheKey).jpg")
                 try? thumbnailData.write(to: fileURL)
@@ -161,20 +152,13 @@ class PhotoGridThumbnailCache {
     }
     
     @MainActor
-    private func createThumbnail(from image: UIImage, size: CGSize) -> UIImage {
-        #if canImport(UIKit)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: size))
-        }
-        #else
+    private func createThumbnail(from image: NSImage, size: CGSize) -> NSImage {
         let targetRect = NSRect(origin: .zero, size: size)
         let thumbnailImage = NSImage(size: size)
         thumbnailImage.lockFocus()
         image.draw(in: targetRect, from: NSRect(origin: .zero, size: image.size), operation: .sourceOver, fraction: 1.0)
         thumbnailImage.unlockFocus()
         return thumbnailImage
-        #endif
     }
     
     private func cacheKey(for item: PhotoGridItem, size: CGSize) -> String {
@@ -235,27 +219,18 @@ struct ReusableThumbnailView: View {
     let size: CGSize
     let onTap: (PhotoGridItem) -> Void
     
-    @State private var image: UIImage?
+    @State private var image: NSImage?
     @State private var isLoading = false
     
     var body: some View {
         ZStack {
             if let image = image {
-                #if canImport(UIKit)
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .onTapGesture {
-                        onTap(item)
-                    }
-                #else
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .onTapGesture {
                         onTap(item)
                     }
-                #endif
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
