@@ -3,16 +3,18 @@
 //  MediaOrganizer
 //
 //  Created by John Bridge on 8/28/25.
+//  Reorganized on 9/3/25 - This file now serves as a convenience import for all PhotoGrid components
 //
 
+// Import all necessary frameworks
 import Foundation
 import SwiftUI
 import SwiftBSON
-import Combine
 import MongoSwift
-
 import AppKit
+import Combine
 
+// MARK: - Extensions
 extension NSImage {
     func jpegRepresentation(compressionFactor: CGFloat) -> Data? {
         guard let tiffData = self.tiffRepresentation,
@@ -23,7 +25,7 @@ extension NSImage {
     }
 }
 
-// MARK: - PhotoGridItem
+// MARK: - Models
 struct PhotoGridItem: Identifiable, Hashable {
     let id: String
     let imageURL: URL
@@ -37,7 +39,6 @@ struct PhotoGridItem: Identifiable, Hashable {
     }
 }
 
-// MARK: - PhotoGridAction
 struct PhotoGridAction {
     let title: String
     let handler: ([PhotoGridItem]) -> Void
@@ -45,6 +46,190 @@ struct PhotoGridAction {
     init(title: String, handler: @escaping ([PhotoGridItem]) -> Void) {
         self.title = title
         self.handler = handler
+    }
+}
+
+enum PhotoGridScrollDirection {
+    case vertical
+    case horizontal
+}
+
+enum PhotoGridError: Error {
+    case imageLoadFailed
+    case cacheWriteFailed
+    case invalidImageData
+    case networkError(Error)
+}
+
+// MARK: - Data Source Protocol
+protocol PhotoGridDataSource: ObservableObject {
+    var items: [PhotoGridItem] { get }
+    var isLoading: Bool { get }
+    
+    func loadItems() async throws
+    func getMediaItem(for id: String) -> MediaItem?
+}
+
+// MARK: - MongoPhotoGridDataSource
+class MongoPhotoGridDataSource: PhotoGridDataSource {
+    @Published var items: [PhotoGridItem] = []
+    @Published var isLoading: Bool = false
+    
+    private let mongoHolder: MongoClientHolder
+    private let filter: BSONDocument
+    private let limit: Int
+    let apiEndpointUrl: String
+    
+    private var mediaItems: [String: MediaItem] = [:]
+    
+    init(mongoHolder: MongoClientHolder, filter: BSONDocument, limit: Int, apiEndpointUrl: String) {
+        self.mongoHolder = mongoHolder
+        self.filter = filter
+        self.limit = limit
+        self.apiEndpointUrl = apiEndpointUrl
+    }
+    
+    @MainActor
+    func loadItems() async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
+        if mongoHolder.client == nil {
+            await mongoHolder.connect()
+        }
+        
+        guard let client = mongoHolder.client else {
+            throw PhotoGridError.networkError(NSError(domain: "MongoConnection", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not connect to MongoDB"]))
+        }
+        
+        let filesCollection = client.db("media_organizer").collection("files")
+        var options = FindOptions(sort: ["time": -1])
+        if limit > 0 {
+            options = FindOptions(limit: limit, sort: ["time": -1, "_id": -1])
+        }
+        
+        var newItems: [PhotoGridItem] = []
+        var newMediaItems: [String: MediaItem] = [:]
+        
+        for try await doc in try await filesCollection.find(filter, options: options) {
+            if let item: MediaItem = try? BSONDecoder().decode(MediaItem.self, from: doc) {
+                let gridItem = PhotoGridItem(
+                    id: item._id.hex,
+                    imageURL: URL(string: apiEndpointUrl + "?request=thumbnail&oid=" + item._id.hex) ?? URL(fileURLWithPath: "/")
+                )
+                newItems.append(gridItem)
+                newMediaItems[item._id.hex] = item
+            }
+        }
+        
+        self.items = newItems
+        self.mediaItems = newMediaItems
+    }
+    
+    func getMediaItem(for id: String) -> MediaItem? {
+        return mediaItems[id]
+    }
+}
+
+// MARK: - PhotoGridThumbnailCache
+class PhotoGridThumbnailCache {
+    static let shared = PhotoGridThumbnailCache()
+    
+    private enum Constants {
+        static let tinyThumbnailWidth: CGFloat = 100.0
+        static let largeIconThreshold: CGFloat = 180.0
+    }
+    
+    private let cache = NSCache<NSString, NSImage>()
+    private let queue = DispatchQueue(label: "com.mediaorganizer.thumbnailcache", qos: .userInitiated)
+    
+    private init() {
+        cache.countLimit = 500
+        cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
+    }
+    
+    @MainActor
+    func getThumbnail(for item: PhotoGridItem, displaySize: CGSize, isVisible: Bool = true) async -> NSImage? {
+        // Determine if we need high-res or tiny thumbnail based on display size and visibility
+        let maxDisplayDimension = max(displaySize.width, displaySize.height)
+        let useHighRes = isVisible && maxDisplayDimension >= Constants.largeIconThreshold
+        
+        let thumbnailType = useHighRes ? "high" : "tiny"
+        let cacheKey = "\(item.id)_\(thumbnailType)"
+        
+        // Check cache first
+        if let cachedImage = cache.object(forKey: cacheKey as NSString) {
+            return cachedImage
+        }
+        
+        // Load and cache image
+        return await loadAndCacheImage(for: item, useHighRes: useHighRes, cacheKey: cacheKey)
+    }
+    
+    private func loadAndCacheImage(for item: PhotoGridItem, useHighRes: Bool, cacheKey: String) async -> NSImage? {
+        return await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self = self else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                
+                do {
+                    let data = try Data(contentsOf: item.imageURL)
+                    
+                    guard let originalImage = NSImage(data: data) else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    
+                    Task { @MainActor in
+                        let thumbnail = await self.createThumbnail(from: originalImage, useHighRes: useHighRes)
+                        self.cache.setObject(thumbnail, forKey: cacheKey as NSString)
+                        continuation.resume(returning: thumbnail)
+                    }
+                } catch {
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
+    
+    @MainActor
+    private func createThumbnail(from image: NSImage, useHighRes: Bool) async -> NSImage {
+        // Choose max dimension based on resolution level
+        let maxDimension: CGFloat = useHighRes ? 300.0 : Constants.tinyThumbnailWidth
+        let sourceSize = image.size
+        
+        // Calculate thumbnail size preserving aspect ratio
+        let aspectRatio = sourceSize.width / sourceSize.height
+        let thumbnailSize: CGSize
+        
+        if aspectRatio > 1 {
+            // Landscape: width is larger
+            thumbnailSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
+        } else {
+            // Portrait or square: height is larger or equal
+            thumbnailSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
+        }
+        
+        let thumbnailImage = NSImage(size: thumbnailSize)
+        
+        thumbnailImage.lockFocus()
+        image.draw(in: NSRect(origin: .zero, size: thumbnailSize))
+        thumbnailImage.unlockFocus()
+        
+        return thumbnailImage
+    }
+    
+    func clearCache() {
+        cache.removeAllObjects()
+    }
+    
+    func removeCachedImage(for itemId: String) {
+        let highResKey = "\(itemId)_high"
+        let tinyKey = "\(itemId)_tiny"
+        cache.removeObject(forKey: highResKey as NSString)
+        cache.removeObject(forKey: tinyKey as NSString)
     }
 }
 
@@ -128,316 +313,6 @@ class ViewportTracker: ObservableObject {
         let startIndex: Int = numRowsAboveVisibleArea * numColumns
         let endIndex = min(itemCount - 1, startIndex + assumedAmtDisplayed)
         return max(0, startIndex)...max(0, endIndex)
-    }
-}
-
-// MARK: - PhotoGridDataSource Protocol
-protocol PhotoGridDataSource: ObservableObject {
-    var items: [PhotoGridItem] { get }
-    var isLoading: Bool { get }
-    
-    func loadItems() async throws
-    func loadMoreItems() async throws
-}
-
-// MARK: - PhotoGridThumbnailCache
-class PhotoGridThumbnailCache {
-    static let shared = PhotoGridThumbnailCache()
-    
-    private let memoryCache = NSCache<NSString, NSImage>()
-    private let cacheDirectory: URL
-    private let metadataURL: URL
-    private var cacheMetadata: CacheMetadata
-    
-    // Constants matching original ThumbnailViewModel
-    private enum Constants {
-        static let tinyThumbnailWidth: CGFloat = 100.0
-        static let largeIconThreshold: CGFloat = 180.0
-    }
-    
-    private struct CacheMetadata: Codable {
-        var totalSize: Int64 = 0
-        var itemCount: Int = 0
-        var items: [String: CacheItemInfo] = [:]
-    }
-    
-    private struct CacheItemInfo: Codable {
-        let fileSize: Int64
-        let createdAt: Date
-        let originalURL: String
-    }
-    
-    private init() {
-        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        self.cacheDirectory = cacheDir.appendingPathComponent("PhotoGridThumbnails")
-        self.metadataURL = cacheDirectory.appendingPathComponent("metadata.plist")
-        
-        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
-        
-        if let data = try? Data(contentsOf: metadataURL),
-           let metadata = try? PropertyListDecoder().decode(CacheMetadata.self, from: data) {
-            self.cacheMetadata = metadata
-        } else {
-            self.cacheMetadata = CacheMetadata()
-        }
-        
-        setupMemoryCache()
-    }
-    
-    private func setupMemoryCache() {
-        memoryCache.totalCostLimit = 100 * 1024 * 1024 // 100MB memory limit
-        memoryCache.countLimit = 1000 // Max 1000 images in memory
-    }
-    
-    @MainActor
-    func getThumbnail(for item: PhotoGridItem, displaySize: CGSize, isVisible: Bool = true) async -> NSImage? {
-        // Determine if we need high-res or tiny thumbnail based on display size and visibility
-        let maxDisplayDimension = max(displaySize.width, displaySize.height)
-        let useHighRes = isVisible && maxDisplayDimension >= Constants.largeIconThreshold
-        
-        let thumbnailType = useHighRes ? "high" : "tiny"
-        let cacheKey = "\(item.id)_\(thumbnailType)"
-        
-        // Check memory cache first
-        if let cachedImage = memoryCache.object(forKey: cacheKey as NSString) {
-            return cachedImage
-        }
-        
-        // Check disk cache
-        let fileURL = cacheDirectory.appendingPathComponent("\(cacheKey).jpg")
-        if FileManager.default.fileExists(atPath: fileURL.path),
-           let data = try? Data(contentsOf: fileURL),
-           let image = NSImage(data: data) {
-            
-            // Add to memory cache
-            let cost = Int(data.count)
-            memoryCache.setObject(image, forKey: cacheKey as NSString, cost: cost)
-            return image
-        }
-        
-        // Load and cache the image
-        return await loadAndCacheImage(for: item, useHighRes: useHighRes, cacheKey: cacheKey)
-    }
-    
-    private func loadAndCacheImage(for item: PhotoGridItem, useHighRes: Bool, cacheKey: String) async -> NSImage? {
-        do {
-            let (data, response) = try await URLSession.shared.data(from: item.imageURL)
-            
-            // Check HTTP response
-            if let httpResponse = response as? HTTPURLResponse {
-                guard httpResponse.statusCode == 200 else {
-                    print("HTTP Error \(httpResponse.statusCode) for \(item.imageURL)")
-                    return nil
-                }
-            }
-            
-            // Check if data looks like an image
-            if data.count < 100 {
-                print("Data too small (\(data.count) bytes), might be an error response for \(item.id)")
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("Response content: \(responseString)")
-                }
-                return nil
-            }
-            
-            guard let originalImage = NSImage(data: data) else {
-                print("Failed to create NSImage from \(data.count) bytes for item \(item.id)")
-                return nil
-            }
-            
-            // Check if image has valid size
-            guard originalImage.size.width > 0 && originalImage.size.height > 0 else {
-                print("Original image has zero size: \(originalImage.size) for item \(item.id)")
-                return nil
-            }
-            
-            let thumbnail = await createThumbnail(from: originalImage, useHighRes: useHighRes)
-            
-            // Cache to disk
-            let thumbnailData = thumbnail.jpegRepresentation(compressionFactor: 0.8)
-            if let thumbnailData = thumbnailData {
-                let fileURL = cacheDirectory.appendingPathComponent("\(cacheKey).jpg")
-                try? thumbnailData.write(to: fileURL)
-                
-                // Update metadata
-                await updateMetadata(cacheKey: cacheKey, fileSize: Int64(thumbnailData.count), originalURL: item.imageURL.absoluteString)
-                
-                // Cache to memory
-                let cost = thumbnailData.count
-                memoryCache.setObject(thumbnail, forKey: cacheKey as NSString, cost: cost)
-            }
-            
-            return thumbnail
-        } catch {
-            print("Failed to load image from \(item.imageURL): \(error)")
-            return nil
-        }
-    }
-    
-    @MainActor
-    private func createThumbnail(from image: NSImage, useHighRes: Bool) -> NSImage {
-        // Choose max dimension based on resolution level
-        let maxDimension: CGFloat = useHighRes ? 300.0 : Constants.tinyThumbnailWidth
-        let sourceSize = image.size
-        
-        // Calculate thumbnail size preserving aspect ratio
-        let aspectRatio = sourceSize.width / sourceSize.height
-        let thumbnailSize: CGSize
-        
-        if aspectRatio > 1 {
-            // Landscape: width is larger
-            thumbnailSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
-        } else {
-            // Portrait or square: height is larger or equal
-            thumbnailSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
-        }
-        
-        // Ensure valid thumbnail size
-        guard thumbnailSize.width > 0 && thumbnailSize.height > 0 else {
-            print("Invalid calculated thumbnail size: \(thumbnailSize) from source: \(sourceSize)")
-            return NSImage(size: CGSize(width: 1, height: 1))
-        }
-        
-        let thumbnailImage = NSImage(size: thumbnailSize)
-        guard thumbnailImage.size.width > 0 && thumbnailImage.size.height > 0 else {
-            print("Failed to create thumbnail image with size: \(thumbnailSize)")
-            return NSImage(size: CGSize(width: 1, height: 1))
-        }
-        
-        thumbnailImage.lockFocus()
-        let targetRect = NSRect(origin: .zero, size: thumbnailSize)
-        image.draw(in: targetRect, from: NSRect(origin: .zero, size: sourceSize), operation: .sourceOver, fraction: 1.0)
-        thumbnailImage.unlockFocus()
-        
-        return thumbnailImage
-    }
-    
-    private func updateMetadata(cacheKey: String, fileSize: Int64, originalURL: String) async {
-        await MainActor.run {
-            let wasNew = cacheMetadata.items[cacheKey] == nil
-            
-            cacheMetadata.items[cacheKey] = CacheItemInfo(
-                fileSize: fileSize,
-                createdAt: Date(),
-                originalURL: originalURL
-            )
-            
-            if wasNew {
-                cacheMetadata.totalSize += fileSize
-                cacheMetadata.itemCount += 1
-            }
-            
-            saveMetadata()
-        }
-    }
-    
-    private func saveMetadata() {
-        do {
-            let data = try PropertyListEncoder().encode(cacheMetadata)
-            try data.write(to: metadataURL)
-        } catch {
-            print("Failed to save cache metadata: \(error)")
-        }
-    }
-    
-    var cacheSize: Int64 {
-        cacheMetadata.totalSize
-    }
-    
-    var itemCount: Int {
-        cacheMetadata.itemCount
-    }
-    
-    func clearCache() {
-        memoryCache.removeAllObjects()
-        
-        try? FileManager.default.removeItem(at: cacheDirectory)
-        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
-        
-        cacheMetadata = CacheMetadata()
-        saveMetadata()
-    }
-}
-
-// MARK: - ReusableThumbnailView
-struct ReusableThumbnailView: View {
-    let item: PhotoGridItem
-    let size: CGSize
-    let onTap: (PhotoGridItem) -> Void
-    let viewportTracker: ViewportTracker?
-    
-    @State private var image: NSImage?
-    @State private var isLoading = false
-    @State private var isVisible = false
-    
-    var body: some View {
-        ZStack {
-            if let image = image {
-                Image(nsImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .onTapGesture {
-                        onTap(item)
-                    }
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .overlay(
-                        Group {
-                            if isLoading {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    )
-            }
-        }
-        .onAppear {
-            Task {
-                await loadImage()
-            }
-        }
-        .onDisappear {
-            isVisible = false
-            image = nil
-        }
-        .onChange(of: viewportTracker?.highResItems ?? Set<String>()) { highResItems in
-            let shouldUseHighRes = highResItems.contains(item.id)
-            let wasVisible = isVisible
-            isVisible = (viewportTracker?.visibleItems ?? Set<String>()).contains(item.id)
-            
-            // Load or upgrade image when visibility or resolution needs change
-            if (shouldUseHighRes && !wasVisible) || (isVisible && image == nil) {
-                Task {
-                    await loadImage()
-                }
-            }
-            
-            // Clear image when no longer visible to save memory
-            if !isVisible && wasVisible {
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // Wait 1 second
-                    if !isVisible {
-                        image = nil
-                    }
-                }
-            }
-        }
-        .id(item.id + "\(size.width)x\(size.height)")
-    }
-    
-    private func loadImage() async {
-        guard image == nil else { return }
-        
-        isLoading = true
-        defer { isLoading = false }
-        
-        // Use high-res items set to determine thumbnail quality
-        let shouldUseHighRes = (viewportTracker?.highResItems ?? Set<String>()).contains(item.id)
-        image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, displaySize: size, isVisible: shouldUseHighRes)
     }
 }
 
@@ -542,10 +417,86 @@ class ReusablePhotoGridViewModel: ObservableObject {
     }
 }
 
-// MARK: - PhotoGridScrollDirection
-enum PhotoGridScrollDirection {
-    case vertical
-    case horizontal
+// MARK: - ReusableThumbnailView
+struct ReusableThumbnailView: View {
+    let item: PhotoGridItem
+    let size: CGSize
+    let onTap: (PhotoGridItem) -> Void
+    let viewportTracker: ViewportTracker?
+    
+    @State private var image: NSImage?
+    @State private var isLoading = false
+    @State private var isVisible = false
+    
+    var body: some View {
+        ZStack {
+            if let image = image {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .onTapGesture {
+                        onTap(item)
+                    }
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .overlay(
+                        Group {
+                            if isLoading {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "photo")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    )
+            }
+        }
+        .onAppear {
+            Task {
+                await loadImage()
+            }
+        }
+        .onDisappear {
+            isVisible = false
+            image = nil
+        }
+        .onChange(of: viewportTracker?.highResItems ?? Set<String>()) { highResItems in
+            let shouldUseHighRes = highResItems.contains(item.id)
+            let wasVisible = isVisible
+            isVisible = (viewportTracker?.visibleItems ?? Set<String>()).contains(item.id)
+            
+            // Load or upgrade image when visibility or resolution needs change
+            if (shouldUseHighRes && !wasVisible) || (isVisible && image == nil) {
+                Task {
+                    await loadImage()
+                }
+            }
+            
+            // Clear image when no longer visible to save memory
+            if !isVisible && wasVisible {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // Wait 1 second
+                    if !isVisible {
+                        image = nil
+                    }
+                }
+            }
+        }
+        .id(item.id + "\(size.width)x\(size.height)")
+    }
+    
+    private func loadImage() async {
+        guard image == nil else { return }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        // Use high-res items set to determine thumbnail quality
+        let shouldUseHighRes = (viewportTracker?.highResItems ?? Set<String>()).contains(item.id)
+        image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, displaySize: size, isVisible: shouldUseHighRes)
+    }
 }
 
 // MARK: - ReusablePhotoGrid
@@ -837,6 +788,7 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     }
 }
 
+// MARK: - SelectionButtonStyle
 struct SelectionButtonStyle: ButtonStyle {
     let selected: Bool
     
@@ -846,78 +798,4 @@ struct SelectionButtonStyle: ButtonStyle {
             .foregroundColor(Color.white)
             .animation(.easeOut(duration: 0.1), value: selected)
     }
-}
-
-// MARK: - MongoPhotoGridDataSource
-class MongoPhotoGridDataSource: PhotoGridDataSource {
-    @Published var items: [PhotoGridItem] = []
-    @Published var isLoading: Bool = false
-    
-    private let mongoHolder: MongoClientHolder
-    private let filter: BSONDocument
-    private let limit: Int
-    private(set) var apiEndpointUrl: String
-    
-    private var mediaItemLookup: [String: MediaItem] = [:]
-    
-    init(mongoHolder: MongoClientHolder, filter: BSONDocument, limit: Int = 0, apiEndpointUrl: String) {
-        self.mongoHolder = mongoHolder
-        self.filter = filter
-        self.limit = limit
-        self.apiEndpointUrl = apiEndpointUrl
-    }
-    
-    func getMediaItem(for itemId: String) -> MediaItem? {
-        return mediaItemLookup[itemId]
-    }
-    
-    @MainActor
-    func loadItems() async throws {
-        isLoading = true
-        defer { isLoading = false }
-        
-        if mongoHolder.client == nil {
-            await mongoHolder.connect()
-        }
-        
-        guard let client = mongoHolder.client else { 
-            print("MongoPhotoGridDataSource: Failed to get MongoDB client")
-            throw PhotoGridError.connectionFailed
-        }
-        
-        let filesCollection = client.db("media_organizer").collection("files")
-        var options = FindOptions(sort: ["time": -1])
-        if limit > 0 {
-            options = FindOptions(limit: limit, sort: ["time": -1, "_id": -1])
-        }
-        
-        var newItems: [PhotoGridItem] = []
-        
-        for try await doc in try await filesCollection.find(filter, options: options) {
-            if let item: MediaItem = try? BSONDecoder().decode(MediaItem.self, from: doc) {
-                let imageURL = createImageURL(for: item)
-                let photoGridItem = PhotoGridItem(id: item._id.hex, imageURL: imageURL)
-                newItems.append(photoGridItem)
-                mediaItemLookup[item._id.hex] = item
-            }
-        }
-        
-        // print("MongoPhotoGridDataSource: Loaded \(newItems.count) items")
-        items = newItems
-    }
-    
-    func loadMoreItems() async throws {
-        // Implementation for pagination if needed in the future
-    }
-    
-    private func createImageURL(for mediaItem: MediaItem) -> URL {
-        let baseURL = apiEndpointUrl.isEmpty ? "http://localhost:8080" : apiEndpointUrl
-        let urlString = "\(baseURL)?request=thumbnail&oid=\(mediaItem._id.hex)"
-        return URL(string: urlString) ?? URL(fileURLWithPath: "/dev/null")
-    }
-}
-
-enum PhotoGridError: Error {
-    case connectionFailed
-    case loadingFailed(String)
 }
