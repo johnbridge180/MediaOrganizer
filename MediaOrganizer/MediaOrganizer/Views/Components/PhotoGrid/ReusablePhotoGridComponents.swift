@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import SwiftBSON
+import Combine
 import MongoSwift
 
 import AppKit
@@ -47,6 +48,89 @@ struct PhotoGridAction {
     }
 }
 
+// MARK: - ViewportTracker
+class ViewportTracker: ObservableObject {
+    @Published var visibleItems: Set<String> = []
+    @Published var highResItems: Set<String> = []
+    
+    private let updateQueue: DispatchQueue
+    private var lastScrollFrameUpdate: Date = Date()
+    private var lastSeenZStackOrigin: CGFloat = 0.0
+    private let scrollUpdateDelay: Double = 0.2
+    private let lowresTriggerWidth: Double = 100.0
+    
+    init() {
+        self.updateQueue = DispatchQueue(label: "com.jbridge.viewportUpdateQueue", qos: .background)
+    }
+    
+    func onScrollFrameUpdate(_ frame: CGRect, gridItems: [PhotoGridItem], width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
+        let currentUpdate = Date()
+        self.lastScrollFrameUpdate = currentUpdate
+        
+        updateQueue.asyncAfter(deadline: .now() + scrollUpdateDelay) { [weak self] in
+            guard let self = self else { return }
+            if self.lastScrollFrameUpdate == currentUpdate {
+                self.updateRangeValues(isScrollUpdate: true, zstackOriginY: frame.origin.y, gridItems: gridItems, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
+            }
+        }
+    }
+    
+    func updateRangeValuesForResize(gridItems: [PhotoGridItem], width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
+        updateQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.updateRangeValues(zstackOriginY: self.lastSeenZStackOrigin, gridItems: gridItems, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
+        }
+    }
+    
+    private func updateRangeValues(isScrollUpdate: Bool = false, zstackOriginY: CGFloat, gridItems: [PhotoGridItem], width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
+        // Performance optimization: only update if scroll distance is significant
+        if isScrollUpdate && abs(self.lastSeenZStackOrigin - zstackOriginY) < colWidth {
+            return
+        }
+        self.lastSeenZStackOrigin = zstackOriginY
+        
+        guard !gridItems.isEmpty && numColumns > 0 else { return }
+        
+        let assumedIndexRange = getAssumedDisplayedIndexRange(zstackOriginY: zstackOriginY, height: height, numColumns: numColumns, colWidth: colWidth, itemCount: gridItems.count)
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            if colWidth > self.lowresTriggerWidth {
+                // High-res mode: visible items + buffer get high-res, others get tiny thumbnails
+                let modifier = numColumns  // One row buffer above and below
+                let bigthumbLowerBound = assumedIndexRange.lowerBound - modifier
+                let bigthumbUpperBound = assumedIndexRange.upperBound + modifier
+                let bigthumbIndexRange = max(0, bigthumbLowerBound)...min(gridItems.count - 1, bigthumbUpperBound)
+                
+                let highResItemIds = Set(bigthumbIndexRange.compactMap { index in
+                    index < gridItems.count ? gridItems[index].id : nil
+                })
+                
+                let allVisibleIds = Set(gridItems.map { $0.id })
+                
+                self.highResItems = highResItemIds
+                self.visibleItems = allVisibleIds
+            } else {
+                // Low-res mode: everything gets tiny thumbnails
+                let allItemIds = Set(gridItems.map { $0.id })
+                self.highResItems = []
+                self.visibleItems = allItemIds
+            }
+        }
+    }
+    
+    private func getAssumedDisplayedIndexRange(zstackOriginY: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat, itemCount: Int) -> ClosedRange<Int> {
+        let maxNumRows: Int = colWidth == 0 ? 0 : Int(ceil(height / colWidth))
+        let assumedAmtDisplayed: Int = maxNumRows * numColumns
+        // zstackOriginY will be negative after scrolling
+        let numRowsAboveVisibleArea: Int = Int(zstackOriginY > 0 || colWidth == 0 ? 0 : abs(zstackOriginY) / colWidth)
+        let startIndex: Int = numRowsAboveVisibleArea * numColumns
+        let endIndex = min(itemCount - 1, startIndex + assumedAmtDisplayed)
+        return max(0, startIndex)...max(0, endIndex)
+    }
+}
+
 // MARK: - PhotoGridDataSource Protocol
 protocol PhotoGridDataSource: ObservableObject {
     var items: [PhotoGridItem] { get }
@@ -64,6 +148,12 @@ class PhotoGridThumbnailCache {
     private let cacheDirectory: URL
     private let metadataURL: URL
     private var cacheMetadata: CacheMetadata
+    
+    // Constants matching original ThumbnailViewModel
+    private enum Constants {
+        static let tinyThumbnailWidth: CGFloat = 100.0
+        static let largeIconThreshold: CGFloat = 180.0
+    }
     
     private struct CacheMetadata: Codable {
         var totalSize: Int64 = 0
@@ -99,8 +189,14 @@ class PhotoGridThumbnailCache {
         memoryCache.countLimit = 1000 // Max 1000 images in memory
     }
     
-    func getThumbnail(for item: PhotoGridItem, size: CGSize) async -> NSImage? {
-        let cacheKey = cacheKey(for: item, size: size)
+    @MainActor
+    func getThumbnail(for item: PhotoGridItem, displaySize: CGSize, isVisible: Bool = true) async -> NSImage? {
+        // Determine if we need high-res or tiny thumbnail based on display size and visibility
+        let maxDisplayDimension = max(displaySize.width, displaySize.height)
+        let useHighRes = isVisible && maxDisplayDimension >= Constants.largeIconThreshold
+        
+        let thumbnailType = useHighRes ? "high" : "tiny"
+        let cacheKey = "\(item.id)_\(thumbnailType)"
         
         // Check memory cache first
         if let cachedImage = memoryCache.object(forKey: cacheKey as NSString) {
@@ -120,28 +216,24 @@ class PhotoGridThumbnailCache {
         }
         
         // Load and cache the image
-        return await loadAndCacheImage(for: item, size: size, cacheKey: cacheKey)
+        return await loadAndCacheImage(for: item, useHighRes: useHighRes, cacheKey: cacheKey)
     }
     
-    private func loadAndCacheImage(for item: PhotoGridItem, size: CGSize, cacheKey: String) async -> NSImage? {
+    private func loadAndCacheImage(for item: PhotoGridItem, useHighRes: Bool, cacheKey: String) async -> NSImage? {
         do {
-            print("Attempting to load image from URL: \(item.imageURL)")
             let (data, response) = try await URLSession.shared.data(from: item.imageURL)
             
             // Check HTTP response
             if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status: \(httpResponse.statusCode) for URL: \(item.imageURL)")
                 guard httpResponse.statusCode == 200 else {
                     print("HTTP Error \(httpResponse.statusCode) for \(item.imageURL)")
                     return nil
                 }
             }
             
-            print("Received \(data.count) bytes for item \(item.id)")
-            
             // Check if data looks like an image
             if data.count < 100 {
-                print("Data too small (\(data.count) bytes), might be an error response")
+                print("Data too small (\(data.count) bytes), might be an error response for \(item.id)")
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("Response content: \(responseString)")
                 }
@@ -159,9 +251,7 @@ class PhotoGridThumbnailCache {
                 return nil
             }
             
-            print("Successfully created NSImage with size \(originalImage.size) for item \(item.id)")
-            
-            let thumbnail = await createThumbnail(from: originalImage, size: size)
+            let thumbnail = await createThumbnail(from: originalImage, useHighRes: useHighRes)
             
             // Cache to disk
             let thumbnailData = thumbnail.jpegRepresentation(compressionFactor: 0.8)
@@ -185,37 +275,41 @@ class PhotoGridThumbnailCache {
     }
     
     @MainActor
-    private func createThumbnail(from image: NSImage, size: CGSize) -> NSImage {
-        // Ensure valid input size
-        guard size.width > 0 && size.height > 0 else {
-            print("Invalid thumbnail size: \(size)")
-            return NSImage(size: CGSize(width: 1, height: 1)) // Return a minimal valid image
+    private func createThumbnail(from image: NSImage, useHighRes: Bool) -> NSImage {
+        // Choose max dimension based on resolution level
+        let maxDimension: CGFloat = useHighRes ? 300.0 : Constants.tinyThumbnailWidth
+        let sourceSize = image.size
+        
+        // Calculate thumbnail size preserving aspect ratio
+        let aspectRatio = sourceSize.width / sourceSize.height
+        let thumbnailSize: CGSize
+        
+        if aspectRatio > 1 {
+            // Landscape: width is larger
+            thumbnailSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
+        } else {
+            // Portrait or square: height is larger or equal
+            thumbnailSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
         }
         
-        // Ensure source image has valid size
-        guard image.size.width > 0 && image.size.height > 0 else {
-            print("Invalid source image size: \(image.size)")
-            return NSImage(size: CGSize(width: 1, height: 1)) // Return a minimal valid image
+        // Ensure valid thumbnail size
+        guard thumbnailSize.width > 0 && thumbnailSize.height > 0 else {
+            print("Invalid calculated thumbnail size: \(thumbnailSize) from source: \(sourceSize)")
+            return NSImage(size: CGSize(width: 1, height: 1))
         }
         
-        let targetRect = NSRect(origin: .zero, size: size)
-        let thumbnailImage = NSImage(size: size)
-        
-        // Check if thumbnail image was created successfully
+        let thumbnailImage = NSImage(size: thumbnailSize)
         guard thumbnailImage.size.width > 0 && thumbnailImage.size.height > 0 else {
-            print("Failed to create thumbnail image with size: \(size)")
-            return NSImage(size: CGSize(width: 1, height: 1)) // Return a minimal valid image
+            print("Failed to create thumbnail image with size: \(thumbnailSize)")
+            return NSImage(size: CGSize(width: 1, height: 1))
         }
         
         thumbnailImage.lockFocus()
-        image.draw(in: targetRect, from: NSRect(origin: .zero, size: image.size), operation: .sourceOver, fraction: 1.0)
+        let targetRect = NSRect(origin: .zero, size: thumbnailSize)
+        image.draw(in: targetRect, from: NSRect(origin: .zero, size: sourceSize), operation: .sourceOver, fraction: 1.0)
         thumbnailImage.unlockFocus()
+        
         return thumbnailImage
-    }
-    
-    private func cacheKey(for item: PhotoGridItem, size: CGSize) -> String {
-        let sizeString = "\(Int(size.width))x\(Int(size.height))"
-        return "\(item.id)_\(sizeString)".replacingOccurrences(of: "/", with: "_")
     }
     
     private func updateMetadata(cacheKey: String, fileSize: Int64, originalURL: String) async {
@@ -270,9 +364,11 @@ struct ReusableThumbnailView: View {
     let item: PhotoGridItem
     let size: CGSize
     let onTap: (PhotoGridItem) -> Void
+    let viewportTracker: ViewportTracker?
     
     @State private var image: NSImage?
     @State private var isLoading = false
+    @State private var isVisible = false
     
     var body: some View {
         ZStack {
@@ -304,6 +400,32 @@ struct ReusableThumbnailView: View {
                 await loadImage()
             }
         }
+        .onDisappear {
+            isVisible = false
+            image = nil
+        }
+        .onChange(of: viewportTracker?.highResItems ?? Set<String>()) { highResItems in
+            let shouldUseHighRes = highResItems.contains(item.id)
+            let wasVisible = isVisible
+            isVisible = (viewportTracker?.visibleItems ?? Set<String>()).contains(item.id)
+            
+            // Load or upgrade image when visibility or resolution needs change
+            if (shouldUseHighRes && !wasVisible) || (isVisible && image == nil) {
+                Task {
+                    await loadImage()
+                }
+            }
+            
+            // Clear image when no longer visible to save memory
+            if !isVisible && wasVisible {
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // Wait 1 second
+                    if !isVisible {
+                        image = nil
+                    }
+                }
+            }
+        }
         .id(item.id + "\(size.width)x\(size.height)")
     }
     
@@ -313,14 +435,9 @@ struct ReusableThumbnailView: View {
         isLoading = true
         defer { isLoading = false }
         
-        print("Loading image for item: \(item.id) from URL: \(item.imageURL)")
-        image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, size: size)
-        
-        if image == nil {
-            print("Failed to load image for item: \(item.id)")
-        } else {
-            print("Successfully loaded image for item: \(item.id)")
-        }
+        // Use high-res items set to determine thumbnail quality
+        let shouldUseHighRes = (viewportTracker?.highResItems ?? Set<String>()).contains(item.id)
+        image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, displaySize: size, isVisible: shouldUseHighRes)
     }
 }
 
@@ -435,6 +552,7 @@ enum PhotoGridScrollDirection {
 struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     @ObservedObject var dataSource: DataSource
     @StateObject private var gridViewModel: ReusablePhotoGridViewModel
+    @StateObject private var viewportTracker = ViewportTracker()
     
     @Binding var idealGridItemSize: Double
     @Binding var multiSelectEnabled: Bool
@@ -493,7 +611,8 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             size: CGSize(width: gridViewModel.photoWidth, height: gridViewModel.photoWidth),
                             onTap: { item in
                                 onPhotoTap?(item)
-                            }
+                            },
+                            viewportTracker: viewportTracker
                         )
                         
                         if multiSelectEnabled {
@@ -560,6 +679,11 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                 if scrollable {
                     ScrollView(scrollDirection == .horizontal ? .horizontal : .vertical, showsIndicators: true) {
                         grid
+                            .onFrameChange { frame in
+                                if scrollDirection == .vertical {
+                                    viewportTracker.onScrollFrameUpdate(frame, gridItems: dataSource.items, width: geometry.size.width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
+                                }
+                            }
                     }
                 } else {
                     grid
@@ -579,6 +703,7 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             idealGridItemSize: idealGridItemSize
                         )
                     }
+                    viewportTracker.updateRangeValuesForResize(gridItems: dataSource.items, width: newValue.width, height: newValue.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
                 }
             }
             .onChange(of: idealGridItemSize) { newValue in
@@ -595,6 +720,10 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             )
                         }
                     }
+                    let width = scrollDirection == .horizontal ? 
+                        CGFloat(dataSource.items.count) * idealGridItemSize : 
+                        geometry.size.width
+                    viewportTracker.updateRangeValuesForResize(gridItems: dataSource.items, width: width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
                 }
             }
         }
@@ -606,10 +735,23 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                         let width = scrollDirection == .horizontal ? 
                             CGFloat(dataSource.items.count) * idealGridItemSize : 
                             NSScreen.main?.frame.width ?? 1200
+                        let height = scrollDirection == .horizontal ? 
+                            idealGridItemSize : 
+                            NSScreen.main?.frame.height ?? 800
+                        
                         gridViewModel.setOffsets(
                             items: dataSource.items,
                             width: width,
                             idealGridItemSize: idealGridItemSize
+                        )
+                        
+                        // Initialize viewport tracking like original
+                        viewportTracker.updateRangeValuesForResize(
+                            gridItems: dataSource.items,
+                            width: width,
+                            height: height,
+                            numColumns: gridViewModel.numCols,
+                            colWidth: gridViewModel.photoWidth
                         )
                     }
                 } catch {
@@ -734,8 +876,6 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
         isLoading = true
         defer { isLoading = false }
         
-        print("MongoPhotoGridDataSource: Starting to load items with filter: \(filter)")
-        
         if mongoHolder.client == nil {
             await mongoHolder.connect()
         }
@@ -762,7 +902,7 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
             }
         }
         
-        print("MongoPhotoGridDataSource: Loaded \(newItems.count) items")
+        // print("MongoPhotoGridDataSource: Loaded \(newItems.count) items")
         items = newItems
     }
     
