@@ -12,22 +12,22 @@ class Tools {
     static func translateExifOrientationToImageOrientation(_ exifOrientationValue: UInt8) -> Image.Orientation? {
         var orientation: Image.Orientation = .up
         switch exifOrientationValue {
-        case 2:
-            orientation = .upMirrored
+            case 2:
+                orientation = .upMirrored
             case 3:
-            orientation = .down
+                orientation = .down
             case 4:
-            orientation = .downMirrored
+                orientation = .downMirrored
             case 5:
-            orientation = .leftMirrored
+                orientation = .leftMirrored
             case 6:
-            orientation = .right
+                orientation = .right
             case 7:
-            orientation = .rightMirrored
+                orientation = .rightMirrored
             case 8:
-            orientation = .left
-        default:
-            orientation = .up
+                orientation = .left
+            default:
+                orientation = .up
         }
         return orientation
     }
