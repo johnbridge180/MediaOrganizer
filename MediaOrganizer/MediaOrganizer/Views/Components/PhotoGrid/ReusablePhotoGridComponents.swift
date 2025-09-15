@@ -14,16 +14,6 @@ import MongoSwift
 import AppKit
 import Combine
 
-// MARK: - Extensions
-extension NSImage {
-    func jpegRepresentation(compressionFactor: CGFloat) -> Data? {
-        guard let tiffData = self.tiffRepresentation,
-              let bitmapImage = NSBitmapImageRep(data: tiffData) else {
-            return nil
-        }
-        return bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: compressionFactor])
-    }
-}
 
 // MARK: - Models
 struct PhotoGridItem: Identifiable, Hashable {
@@ -150,19 +140,16 @@ class PhotoGridThumbnailCache {
     
     @MainActor
     func getThumbnail(for item: PhotoGridItem, displaySize: CGSize, isVisible: Bool = true) async -> NSImage? {
-        // Determine if we need high-res or tiny thumbnail based on display size and visibility
         let maxDisplayDimension = max(displaySize.width, displaySize.height)
         let useHighRes = isVisible && maxDisplayDimension >= Constants.largeIconThreshold
         
         let thumbnailType = useHighRes ? "high" : "tiny"
         let cacheKey = "\(item.id)_\(thumbnailType)"
         
-        // Check cache first
         if let cachedImage = cache.object(forKey: cacheKey as NSString) {
             return cachedImage
         }
         
-        // Load and cache image
         return await loadAndCacheImage(for: item, useHighRes: useHighRes, cacheKey: cacheKey)
     }
     
@@ -196,19 +183,15 @@ class PhotoGridThumbnailCache {
     
     @MainActor
     private func createThumbnail(from image: NSImage, useHighRes: Bool) async -> NSImage {
-        // Choose max dimension based on resolution level
         let maxDimension: CGFloat = useHighRes ? 300.0 : Constants.tinyThumbnailWidth
         let sourceSize = image.size
         
-        // Calculate thumbnail size preserving aspect ratio
         let aspectRatio = sourceSize.width / sourceSize.height
         let thumbnailSize: CGSize
         
         if aspectRatio > 1 {
-            // Landscape: width is larger
             thumbnailSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
         } else {
-            // Portrait or square: height is larger or equal
             thumbnailSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
         }
         
@@ -268,7 +251,6 @@ class ViewportTracker: ObservableObject {
     }
     
     private func updateRangeValues(isScrollUpdate: Bool = false, zstackOriginY: CGFloat, gridItems: [PhotoGridItem], width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
-        // Performance optimization: only update if scroll distance is significant
         if isScrollUpdate && abs(self.lastSeenZStackOrigin - zstackOriginY) < colWidth {
             return
         }
@@ -282,8 +264,7 @@ class ViewportTracker: ObservableObject {
             guard let self = self else { return }
             
             if colWidth > self.lowresTriggerWidth {
-                // High-res mode: visible items + buffer get high-res, others get tiny thumbnails
-                let modifier = numColumns  // One row buffer above and below
+                let modifier = numColumns
                 let bigthumbLowerBound = assumedIndexRange.lowerBound - modifier
                 let bigthumbUpperBound = assumedIndexRange.upperBound + modifier
                 let bigthumbIndexRange = max(0, bigthumbLowerBound)...min(gridItems.count - 1, bigthumbUpperBound)
@@ -297,7 +278,6 @@ class ViewportTracker: ObservableObject {
                 self.highResItems = highResItemIds
                 self.visibleItems = allVisibleIds
             } else {
-                // Low-res mode: everything gets tiny thumbnails
                 let allItemIds = Set(gridItems.map { $0.id })
                 self.highResItems = []
                 self.visibleItems = allItemIds
@@ -308,7 +288,6 @@ class ViewportTracker: ObservableObject {
     private func getAssumedDisplayedIndexRange(zstackOriginY: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat, itemCount: Int) -> ClosedRange<Int> {
         let maxNumRows: Int = colWidth == 0 ? 0 : Int(ceil(height / colWidth))
         let assumedAmtDisplayed: Int = maxNumRows * numColumns
-        // zstackOriginY will be negative after scrolling
         let numRowsAboveVisibleArea: Int = Int(zstackOriginY > 0 || colWidth == 0 ? 0 : abs(zstackOriginY) / colWidth)
         let startIndex: Int = numRowsAboveVisibleArea * numColumns
         let endIndex = min(itemCount - 1, startIndex + assumedAmtDisplayed)
@@ -467,17 +446,15 @@ struct ReusableThumbnailView: View {
             let wasVisible = isVisible
             isVisible = (viewportTracker?.visibleItems ?? Set<String>()).contains(item.id)
             
-            // Load or upgrade image when visibility or resolution needs change
             if (shouldUseHighRes && !wasVisible) || (isVisible && image == nil) {
                 Task {
                     await loadImage()
                 }
             }
             
-            // Clear image when no longer visible to save memory
             if !isVisible && wasVisible {
                 Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // Wait 1 second
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
                     if !isVisible {
                         image = nil
                     }
@@ -493,7 +470,6 @@ struct ReusableThumbnailView: View {
         isLoading = true
         defer { isLoading = false }
         
-        // Use high-res items set to determine thumbnail quality
         let shouldUseHighRes = (viewportTracker?.highResItems ?? Set<String>()).contains(item.id)
         image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, displaySize: size, isVisible: shouldUseHighRes)
     }
@@ -586,8 +562,9 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             let selectedItems = getSelectedItems()
                             ForEach(contextActions.indices, id: \.self) { index in
                                 let action = contextActions[index]
-                                Button(action.title) {
-                                    let itemsToProcess = selectedItems.isEmpty ? [item] : selectedItems
+                                let itemsToProcess = selectedItems.isEmpty ? [item] : selectedItems
+                                let title = itemsToProcess.count > 1 ? "\(action.title) (\(itemsToProcess.count))" : action.title
+                                Button(title) {
                                     action.handler(itemsToProcess)
                                 }
                             }
@@ -659,11 +636,11 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
             }
             .onChange(of: idealGridItemSize) { newValue in
                 if !dataSource.isLoading && !dataSource.items.isEmpty {
+                    let width = scrollDirection == .horizontal ?
+                        CGFloat(dataSource.items.count) * idealGridItemSize :
+                        geometry.size.width
                     DispatchQueue.main.async {
                         withAnimation {
-                            let width = scrollDirection == .horizontal ? 
-                                CGFloat(dataSource.items.count) * idealGridItemSize : 
-                                geometry.size.width
                             gridViewModel.setOffsets(
                                 items: dataSource.items,
                                 width: width,
@@ -671,9 +648,6 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             )
                         }
                     }
-                    let width = scrollDirection == .horizontal ? 
-                        CGFloat(dataSource.items.count) * idealGridItemSize : 
-                        geometry.size.width
                     viewportTracker.updateRangeValuesForResize(gridItems: dataSource.items, width: width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
                 }
             }
@@ -764,11 +738,13 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     }
     
     private func handleDragSelection() {
+        let xValues = [dragStart.x, dragEnd.x]
+        let yValues = [dragStart.y, dragEnd.y]
         let rectangle = (
-            x1: dragEnd.x > dragStart.x ? dragStart.x : dragEnd.x,
-            y1: dragEnd.y > dragStart.y ? dragStart.y : dragEnd.y,
-            x2: dragEnd.x > dragStart.x ? dragEnd.x : dragStart.x,
-            y2: dragEnd.y > dragStart.y ? dragEnd.y : dragStart.y
+            x1: xValues.min()!,
+            y1: yValues.min()!,
+            x2: xValues.max()!,
+            y2: yValues.max()!
         )
         
         if !(rectangle.x1 == 0 && rectangle.y1 == 0 && rectangle.x2 == 0 && rectangle.y2 == 0) {
