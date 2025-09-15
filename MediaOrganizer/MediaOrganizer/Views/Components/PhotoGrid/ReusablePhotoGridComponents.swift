@@ -9,8 +9,6 @@
 // Import all necessary frameworks
 import Foundation
 import SwiftUI
-import SwiftBSON
-import MongoSwift
 import AppKit
 import Combine
 
@@ -55,71 +53,11 @@ enum PhotoGridError: Error {
 protocol PhotoGridDataSource: ObservableObject {
     var items: [PhotoGridItem] { get }
     var isLoading: Bool { get }
-    
-    func loadItems() async throws
+
+    func loadItems(offset: Int, length: Int) async throws
     func getMediaItem(for id: String) -> MediaItem?
 }
 
-// MARK: - MongoPhotoGridDataSource
-class MongoPhotoGridDataSource: PhotoGridDataSource {
-    @Published var items: [PhotoGridItem] = []
-    @Published var isLoading: Bool = false
-    
-    private let mongoHolder: MongoClientHolder
-    private let filter: BSONDocument
-    private let limit: Int
-    let apiEndpointUrl: String
-    
-    private var mediaItems: [String: MediaItem] = [:]
-    
-    init(mongoHolder: MongoClientHolder, filter: BSONDocument, limit: Int, apiEndpointUrl: String) {
-        self.mongoHolder = mongoHolder
-        self.filter = filter
-        self.limit = limit
-        self.apiEndpointUrl = apiEndpointUrl
-    }
-    
-    @MainActor
-    func loadItems() async throws {
-        isLoading = true
-        defer { isLoading = false }
-        
-        if mongoHolder.client == nil {
-            await mongoHolder.connect()
-        }
-        
-        guard let client = mongoHolder.client else {
-            throw PhotoGridError.networkError(NSError(domain: "MongoConnection", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not connect to MongoDB"]))
-        }
-        
-        let filesCollection = client.db("media_organizer").collection("files")
-        var options = FindOptions(sort: ["time": -1])
-        if limit > 0 {
-            options = FindOptions(limit: limit, sort: ["time": -1, "_id": -1])
-        }
-        
-        var newItems: [PhotoGridItem] = []
-        var newMediaItems: [String: MediaItem] = [:]
-        
-        for try await doc in try await filesCollection.find(filter, options: options) {
-            if let item: MediaItem = try? BSONDecoder().decode(MediaItem.self, from: doc) {
-                let gridItem = PhotoGridItem(
-                    id: item._id.hex,
-                    imageURL: URL(string: apiEndpointUrl + "?request=thumbnail&oid=" + item._id.hex) ?? URL(fileURLWithPath: "/")
-                )
-                newItems.append(gridItem)
-                newMediaItems[item._id.hex] = item
-            }
-        }
-        
-        self.items = newItems
-        self.mediaItems = newMediaItems
-    }
-    
-    func getMediaItem(for id: String) -> MediaItem? {
-        return mediaItems[id]
-    }
-}
 
 // MARK: - PhotoGridThumbnailCache
 class PhotoGridThumbnailCache {
@@ -655,7 +593,7 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
         .onAppear {
             Task {
                 do {
-                    try await dataSource.loadItems()
+                    try await dataSource.loadItems(offset: 0, length: 0)
                     DispatchQueue.main.async {
                         let width = scrollDirection == .horizontal ? 
                             CGFloat(dataSource.items.count) * idealGridItemSize : 
