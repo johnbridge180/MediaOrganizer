@@ -63,10 +63,6 @@ protocol PhotoGridDataSource: ObservableObject {
 class PhotoGridThumbnailCache {
     static let shared = PhotoGridThumbnailCache()
     
-    private enum Constants {
-        static let tinyThumbnailWidth: CGFloat = 100.0
-        static let largeIconThreshold: CGFloat = 180.0
-    }
     
     private let cache = NSCache<NSString, NSImage>()
     private let queue = DispatchQueue(label: "com.mediaorganizer.thumbnailcache", qos: .userInitiated)
@@ -77,21 +73,18 @@ class PhotoGridThumbnailCache {
     }
     
     @MainActor
-    func getThumbnail(for item: PhotoGridItem, displaySize: CGSize, isVisible: Bool = true) async -> NSImage? {
-        let maxDisplayDimension = max(displaySize.width, displaySize.height)
-        let useHighRes = isVisible && maxDisplayDimension >= Constants.largeIconThreshold
-        
-        let thumbnailType = useHighRes ? "high" : "tiny"
-        let cacheKey = "\(item.id)_\(thumbnailType)"
-        
+    func getThumbnail(for item: PhotoGridItem, thumbnailSize: CGFloat, isHighRes: Bool = true) async -> NSImage? {
+        let thumbnailType = isHighRes ? "high" : "tiny"
+        let cacheKey = "\(item.id)_\(thumbnailType)_\(Int(thumbnailSize))"
+
         if let cachedImage = cache.object(forKey: cacheKey as NSString) {
             return cachedImage
         }
-        
-        return await loadAndCacheImage(for: item, useHighRes: useHighRes, cacheKey: cacheKey)
+
+        return await loadAndCacheImage(for: item, thumbnailSize: thumbnailSize, cacheKey: cacheKey)
     }
     
-    private func loadAndCacheImage(for item: PhotoGridItem, useHighRes: Bool, cacheKey: String) async -> NSImage? {
+    private func loadAndCacheImage(for item: PhotoGridItem, thumbnailSize: CGFloat, cacheKey: String) async -> NSImage? {
         return await withCheckedContinuation { continuation in
             queue.async { [weak self] in
                 guard let self = self else {
@@ -108,7 +101,7 @@ class PhotoGridThumbnailCache {
                     }
                     
                     Task { @MainActor in
-                        let thumbnail = await self.createThumbnail(from: originalImage, useHighRes: useHighRes)
+                        let thumbnail = await self.createThumbnail(from: originalImage, thumbnailSize: thumbnailSize)
                         self.cache.setObject(thumbnail, forKey: cacheKey as NSString)
                         continuation.resume(returning: thumbnail)
                     }
@@ -120,25 +113,24 @@ class PhotoGridThumbnailCache {
     }
     
     @MainActor
-    private func createThumbnail(from image: NSImage, useHighRes: Bool) async -> NSImage {
-        let maxDimension: CGFloat = useHighRes ? 300.0 : Constants.tinyThumbnailWidth
+    private func createThumbnail(from image: NSImage, thumbnailSize maxDimension: CGFloat) async -> NSImage {
         let sourceSize = image.size
-        
+
         let aspectRatio = sourceSize.width / sourceSize.height
         let thumbnailSize: CGSize
-        
+
         if aspectRatio > 1 {
             thumbnailSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
         } else {
             thumbnailSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
         }
-        
+
         let thumbnailImage = NSImage(size: thumbnailSize)
-        
+
         thumbnailImage.lockFocus()
         image.draw(in: NSRect(origin: .zero, size: thumbnailSize))
         thumbnailImage.unlockFocus()
-        
+
         return thumbnailImage
     }
     
@@ -404,12 +396,15 @@ struct ReusableThumbnailView: View {
     
     private func loadImage() async {
         guard image == nil else { return }
-        
+
         isLoading = true
         defer { isLoading = false }
-        
+
+        let maxDisplayDimension = max(size.width, size.height)
         let shouldUseHighRes = (viewportTracker?.highResItems ?? Set<String>()).contains(item.id)
-        image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, displaySize: size, isVisible: shouldUseHighRes)
+        let thumbnailSize: CGFloat = shouldUseHighRes ? max(300.0, maxDisplayDimension) : 100.0
+
+        image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, thumbnailSize: thumbnailSize, isHighRes: shouldUseHighRes)
     }
 }
 
