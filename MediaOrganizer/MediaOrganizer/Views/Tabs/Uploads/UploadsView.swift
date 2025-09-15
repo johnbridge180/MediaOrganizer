@@ -28,7 +28,8 @@ struct UploadsView: View {
     @Binding var sliderDisabled: Bool
 
     @State var expandedUpload: Upload?
-    
+    @State private var expandedDataSource: MongoPhotoGridDataSource?
+
     @AppStorage("api_endpoint_url") private var apiEndpointUrl: String = ""
 
     init(idealGridItemSize: Binding<Double>, sliderDisabled: Binding<Bool>, minGridItemSize: Double, mongoHolder: MongoClientHolder, appDelegate: AppDelegate) {
@@ -54,7 +55,7 @@ struct UploadsView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            if let upload: Upload = expandedUpload {
+            if let upload: Upload = expandedUpload, let dataSource = expandedDataSource {
                 VStack {
                     HStack {
                         Button {
@@ -62,6 +63,7 @@ struct UploadsView: View {
                                 self.sliderDisabled = true
                                 self.idealGridItemSize = 99.0
                                 self.expandedUpload = nil
+                                self.expandedDataSource = nil
                             }
                         } label: {
                             Image(systemName: "chevron.backward.circle")
@@ -80,14 +82,14 @@ struct UploadsView: View {
                         .frame(maxWidth: .infinity, maxHeight: 2)
                         .padding(EdgeInsets(top: -5, leading: 15, bottom: 0, trailing: 0))
                     ReusablePhotoGrid(
-                        dataSource: createDataSource(for: upload),
+                        dataSource: dataSource,
                         idealGridItemSize: $idealGridItemSize,
                         multiSelectEnabled: .constant(false),
                         minGridItemSize: minGridItemSize,
                         scrollDirection: .vertical,
                         dragSelectEnabled: false,
                         onPhotoTap: { item in
-                            if let mediaItem = createDataSource(for: upload).getMediaItem(for: item.id) {
+                            if let mediaItem = dataSource.getMediaItem(for: item.id) {
                                 appDelegate.openMediaItemDetailWindow(
                                     rect: CGRect(x: 0, y: 0, width: 1500, height: 1000),
                                     item: mediaItem,
@@ -98,7 +100,6 @@ struct UploadsView: View {
                         },
                         contextActions: [
                             PhotoGridAction(title: "Download") { items in
-                                let dataSource = createDataSource(for: upload)
                                 for item in items {
                                     if let mediaItem = dataSource.getMediaItem(for: item.id) {
                                         DownloadManager.shared.download(mediaItem)
@@ -142,6 +143,7 @@ struct UploadsView: View {
                                     .onTapGesture {
                                         withAnimation {
                                             self.expandedUpload = upload
+                                            self.expandedDataSource = createDataSource(for: upload)
                                             self.sliderDisabled = false
                                         }
                                     }
@@ -158,7 +160,7 @@ struct UploadsView: View {
                                         scrollDirection: .horizontal,
                                         dragSelectEnabled: false,
                                         onPhotoTap: { item in
-                                            if let mediaItem = createDataSource(for: upload).getMediaItem(for: item.id) {
+                                            if let mediaItem = createDataSource(for: upload, horizontal: true).getMediaItem(for: item.id) {
                                                 appDelegate.openMediaItemDetailWindow(
                                                     rect: CGRect(x: 0, y: 0, width: 1500, height: 1000),
                                                     item: mediaItem,
