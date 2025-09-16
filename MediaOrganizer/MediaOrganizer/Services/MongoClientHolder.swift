@@ -18,7 +18,6 @@ class MongoClientHolder: ObservableObject {
     @MainActor
     func connect() async {
         do {
-            print(mongodbUrl)
             client = try MongoClient(mongodbUrl, using: elg)
             db = client?.db("media_organizer")
         } catch {
