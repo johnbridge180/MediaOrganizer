@@ -514,20 +514,18 @@ struct ReusableThumbnailView: View {
             switch newMode {
             case .highRes, .lowRes:
                 if image == nil || currentResolution != newMode {
+                    // Clear current image immediately when switching resolutions to free memory
+                    if currentResolution != newMode && image != nil {
+                        image = nil
+                    }
                     Task {
                         await loadImage(newMode)
                     }
                 }
             case .empty:
-                if wasVisible {
-                    Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 1_000_000_000)
-                        if displayMode == .empty {
-                            image = nil
-                            currentResolution = nil
-                        }
-                    }
-                }
+                // Immediate cleanup instead of delayed
+                image = nil
+                currentResolution = nil
             }
         }
         .id(item.id)
