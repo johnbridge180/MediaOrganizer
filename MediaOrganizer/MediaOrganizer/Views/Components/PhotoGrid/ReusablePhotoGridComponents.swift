@@ -46,6 +46,19 @@ enum PhotoGridError: Error {
     case cacheWriteFailed
     case invalidImageData
     case networkError(Error)
+
+    var localizedDescription: String {
+        switch self {
+        case .imageLoadFailed:
+            return "Failed to load image"
+        case .cacheWriteFailed:
+            return "Failed to write to cache"
+        case .invalidImageData:
+            return "Invalid image data"
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        }
+    }
 }
 
 enum ThumbnailDisplayMode {
@@ -159,6 +172,7 @@ class PhotoGridThumbnailCache {
                         continuation.resume(returning: thumbnail)
                     }
                 } catch {
+                    print("[ThumbnailCache] Error loading image from \(item.imageURL): \(error.localizedDescription)")
                     continuation.resume(returning: nil)
                 }
             }
@@ -239,7 +253,11 @@ class PhotoGridThumbnailCache {
                     return
                 }
 
-                try? jpegData.write(to: fileURL)
+                do {
+                    try jpegData.write(to: fileURL)
+                } catch {
+                    print("[ThumbnailCache] Error saving thumbnail to disk: \(error.localizedDescription)")
+                }
                 continuation.resume(returning: ())
             }
         }
@@ -247,8 +265,12 @@ class PhotoGridThumbnailCache {
 
     func clearCache() {
         cache.removeAllObjects()
-        try? FileManager.default.removeItem(at: cacheDirectory)
-        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.removeItem(at: cacheDirectory)
+            try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        } catch {
+            print("[ThumbnailCache] Error clearing cache directory: \(error.localizedDescription)")
+        }
     }
     
     func removeCachedImage(for itemId: String) {
@@ -265,8 +287,23 @@ class PhotoGridThumbnailCache {
             let smallFile = self.cacheDirectory.appendingPathComponent("\(smallKey).jpg")
             let largeFile = self.cacheDirectory.appendingPathComponent("\(largeKey).jpg")
 
-            try? fileManager.removeItem(at: smallFile)
-            try? fileManager.removeItem(at: largeFile)
+            do {
+                try fileManager.removeItem(at: smallFile)
+            } catch {
+                // Only log if file actually existed
+                if FileManager.default.fileExists(atPath: smallFile.path) {
+                    print("[ThumbnailCache] Error removing small thumbnail: \(error.localizedDescription)")
+                }
+            }
+
+            do {
+                try fileManager.removeItem(at: largeFile)
+            } catch {
+                // Only log if file actually existed
+                if FileManager.default.fileExists(atPath: largeFile.path) {
+                    print("[ThumbnailCache] Error removing large thumbnail: \(error.localizedDescription)")
+                }
+            }
         }
     }
 }
@@ -834,7 +871,8 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             )
                         }
                     } catch {
-                        print("Error loading items: \(error)")
+                        // Consistent error handling: log error with context
+                        print("[PhotoGrid] Error loading items: \(error.localizedDescription)")
                     }
                 }
             }
