@@ -337,6 +337,7 @@ class ViewportTracker: ObservableObject {
         let visibleEndRow = visibleIndexRange.upperBound / numColumns
 
         var newItemInfo: [String: ViewportItemInfo] = [:]
+        newItemInfo.reserveCapacity(gridItems.count)
 
         for (index, item) in gridItems.enumerated() {
             let isVisible = visibleIndexRange.contains(index)
@@ -412,11 +413,14 @@ class ReusablePhotoGridViewModel: ObservableObject {
                 offsets[items[i].id] = self.getOffset(for: i, width: width, numCols: newNumCols, colWidth: newPhotoWidth)
             }
         } else {
-            let currentItemSet = Set(items.map { $0.id })
-            offsets = offsets.filter { currentItemSet.contains($0.key) }
+            // More efficient dictionary operations: create new dict instead of filtering
+            var newOffsets: [String: CGSize] = [:]
+            newOffsets.reserveCapacity(currentItemCount)
+
             for i in 0..<currentItemCount {
-                offsets[items[i].id] = self.getOffset(for: i, width: width, numCols: newNumCols, colWidth: newPhotoWidth)
+                newOffsets[items[i].id] = self.getOffset(for: i, width: width, numCols: newNumCols, colWidth: newPhotoWidth)
             }
+            offsets = newOffsets
         }
 
         // Update cached values

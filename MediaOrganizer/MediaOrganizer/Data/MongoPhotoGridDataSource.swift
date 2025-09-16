@@ -71,7 +71,10 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
             self.mediaItems = newMediaItems
         } else {
             self.items.append(contentsOf: newItems)
-            self.mediaItems.merge(newMediaItems) { _, new in new }
+            // More efficient than merge: direct assignment for new keys
+            for (key, value) in newMediaItems {
+                self.mediaItems[key] = value
+            }
         }
     }
 
