@@ -383,31 +383,34 @@ class ReusablePhotoGridViewModel: ObservableObject {
     }
     
     func setOffsets(items: [PhotoGridItem], width: CGFloat, idealGridItemSize: Double) {
-        let numCols = self.getNumColumns(width: width, idealGridItemSize: idealGridItemSize)
-        let photoWidth = self.getColWidth(width: width, numCols: numCols)
-        
+        // Cache calculations to avoid redundant computation
+        let newNumCols = self.getNumColumns(width: width, idealGridItemSize: idealGridItemSize)
+        let newPhotoWidth = self.getColWidth(width: width, numCols: newNumCols)
+        let newNumRows = self.getNumRows(items: items, width: width, idealGridItemSize: idealGridItemSize, numCols: newNumCols)
+
         let currentItemCount = items.count
         let canDoIncrementalUpdate = (width == lastWidth &&
                                      idealGridItemSize == lastIdealSize &&
                                      currentItemCount > lastItemCount &&
                                      lastItemCount > 0)
-        
+
         if canDoIncrementalUpdate {
             for i in lastItemCount..<currentItemCount {
-                offsets[items[i].id] = self.getOffset(for: i, width: width, numCols: numCols, colWidth: photoWidth)
+                offsets[items[i].id] = self.getOffset(for: i, width: width, numCols: newNumCols, colWidth: newPhotoWidth)
             }
         } else {
             let currentItemSet = Set(items.map { $0.id })
             offsets = offsets.filter { currentItemSet.contains($0.key) }
             for i in 0..<currentItemCount {
-                offsets[items[i].id] = self.getOffset(for: i, width: width, numCols: numCols, colWidth: photoWidth)
+                offsets[items[i].id] = self.getOffset(for: i, width: width, numCols: newNumCols, colWidth: newPhotoWidth)
             }
         }
-        
-        self.numCols = numCols
-        self.photoWidth = photoWidth
-        self.zstackHeight = photoWidth * CGFloat(self.getNumRows(items: items, width: width, idealGridItemSize: idealGridItemSize, numCols: numCols))
-        
+
+        // Update cached values
+        self.numCols = newNumCols
+        self.photoWidth = newPhotoWidth
+        self.zstackHeight = newPhotoWidth * CGFloat(newNumRows)
+
         lastItemCount = currentItemCount
         lastWidth = width
         lastIdealSize = idealGridItemSize
