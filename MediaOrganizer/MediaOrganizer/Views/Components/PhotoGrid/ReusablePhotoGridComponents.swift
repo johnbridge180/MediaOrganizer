@@ -298,8 +298,10 @@ class ViewportTracker: ObservableObject {
         guard !gridItems.isEmpty && numColumns > 0 else { return }
 
         let visibleIndexRange = getAssumedDisplayedIndexRange(zstackOriginY: zstackOriginY, height: height, numColumns: numColumns, colWidth: colWidth, itemCount: gridItems.count)
+        
+        let visibleStartRow = visibleIndexRange.lowerBound / numColumns
+        let visibleEndRow = visibleIndexRange.upperBound / numColumns
 
-        // Do calculations on background queue
         var newItemInfo: [String: ViewportItemInfo] = [:]
 
         for (index, item) in gridItems.enumerated() {
@@ -310,11 +312,9 @@ class ViewportTracker: ObservableObject {
                 rowsFromVisible = 0
             } else {
                 let itemRow = index / numColumns
-                let visibleStartRow = visibleIndexRange.lowerBound / numColumns
-                let visibleEndRow = visibleIndexRange.upperBound / numColumns
 
                 if itemRow < visibleStartRow {
-                    rowsFromVisible = visibleStartRow - itemRow
+                    rowsFromVisible = -(visibleStartRow - itemRow)
                 } else {
                     rowsFromVisible = itemRow - visibleEndRow
                 }
