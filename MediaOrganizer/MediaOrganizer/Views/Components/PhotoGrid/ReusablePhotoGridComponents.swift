@@ -48,6 +48,12 @@ enum PhotoGridError: Error {
     case networkError(Error)
 }
 
+enum ThumbnailDisplayMode {
+    case empty
+    case lowRes
+    case highRes
+}
+
 // MARK: - Data Source Protocol
 protocol PhotoGridDataSource: ObservableObject {
     associatedtype ItemData
@@ -327,7 +333,6 @@ class ViewportTracker: ObservableObject {
             )
         }
 
-        // Only update published variable on main thread
         DispatchQueue.main.async { [weak self] in
             self?.itemInfo = newItemInfo
         }
@@ -446,7 +451,7 @@ struct ReusableThumbnailView: View {
     let item: PhotoGridItem
     let size: CGSize
     let onTap: (PhotoGridItem) -> Void
-    let viewportTracker: ViewportTracker?
+    let displayMode: ThumbnailDisplayMode
     
     @State private var image: NSImage?
     @State private var isLoading = false
@@ -486,23 +491,24 @@ struct ReusableThumbnailView: View {
             isVisible = false
             image = nil
         }
-        .onChange(of: viewportTracker?.itemInfo ?? [:]) { itemInfo in
-            guard let info = itemInfo[item.id] else { return }
-
+        .onChange(of: displayMode) { newMode in
             let wasVisible = isVisible
-            isVisible = info.isVisible
+            isVisible = (newMode == .highRes)
 
-            if (info.isVisible && image == nil) || (info.rowsFromVisible <= 1 && image == nil) {
-                Task {
-                    await loadImage()
+            switch newMode {
+            case .highRes, .lowRes:
+                if image == nil {
+                    Task {
+                        await loadImage()
+                    }
                 }
-            }
-
-            if !isVisible && wasVisible {
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                    if !isVisible {
-                        image = nil
+            case .empty:
+                if wasVisible {
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                        if displayMode == .empty {
+                            image = nil
+                        }
                     }
                 }
             }
@@ -516,13 +522,13 @@ struct ReusableThumbnailView: View {
         isLoading = true
         defer { isLoading = false }
 
-        let info = viewportTracker?.itemInfo[item.id]
-        let shouldUseHighRes = (info?.isVisible == true) || (info?.rowsFromVisible ?? Int.max) <= 1
-
-        if shouldUseHighRes {
+        switch displayMode {
+        case .highRes:
             image = await PhotoGridThumbnailCache.shared.getThumbnailLarge(for: item)
-        } else {
+        case .lowRes:
             image = await PhotoGridThumbnailCache.shared.getThumbnailSmall(for: item)
+        case .empty:
+            break
         }
     }
 }
@@ -544,6 +550,20 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     
     // Selection state
     @State private var selected: [String: Bool] = [:]
+
+    private func displayMode(for item: PhotoGridItem) -> ThumbnailDisplayMode {
+        guard let info = viewportTracker.itemInfo[item.id] else {
+            return .empty
+        }
+
+        if info.isVisible {
+            return .highRes
+        } else if abs(info.rowsFromVisible) <= 1 {
+            return .lowRes
+        } else {
+            return .empty
+        }
+    }
     
     // Drag state
     @State private var dragging: Bool = false
@@ -591,7 +611,7 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             onTap: { item in
                                 onPhotoTap?(item)
                             },
-                            viewportTracker: viewportTracker
+                            displayMode: displayMode(for: item)
                         )
                         
                         if multiSelectEnabled {
@@ -721,7 +741,6 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                                 idealGridItemSize: idealGridItemSize
                             )
 
-                            // Initialize viewport tracking like original
                             viewportTracker.updateRangeValuesForResize(
                                 gridItems: dataSource.items,
                                 width: width,
