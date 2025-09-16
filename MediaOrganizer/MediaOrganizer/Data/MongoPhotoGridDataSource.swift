@@ -46,7 +46,7 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
 
         let effectiveLimit = length > 0 ? length : limit
         if effectiveLimit > 0 {
-            options = FindOptions(skip: offset, limit: effectiveLimit, sort: ["time": -1, "_id": -1])
+            options = FindOptions(limit: effectiveLimit, skip: offset, sort: ["time": -1, "_id": -1])
         } else if offset > 0 {
             options = FindOptions(skip: offset, sort: ["time": -1, "_id": -1])
         }
