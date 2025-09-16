@@ -456,6 +456,7 @@ struct ReusableThumbnailView: View {
     @State private var image: NSImage?
     @State private var isLoading = false
     @State private var isVisible = false
+    @State private var currentResolution: ThumbnailDisplayMode?
     
     var body: some View {
         ZStack {
@@ -484,12 +485,13 @@ struct ReusableThumbnailView: View {
         }
         .onAppear {
             Task {
-                await loadImage()
+                await loadImage(displayMode)
             }
         }
         .onDisappear {
             isVisible = false
             image = nil
+            currentResolution = nil
         }
         .onChange(of: displayMode) { newMode in
             let wasVisible = isVisible
@@ -497,9 +499,9 @@ struct ReusableThumbnailView: View {
 
             switch newMode {
             case .highRes, .lowRes:
-                if image == nil {
+                if image == nil || currentResolution != newMode {
                     Task {
-                        await loadImage()
+                        await loadImage(newMode)
                     }
                 }
             case .empty:
@@ -508,6 +510,7 @@ struct ReusableThumbnailView: View {
                         try? await Task.sleep(nanoseconds: 1_000_000_000)
                         if displayMode == .empty {
                             image = nil
+                            currentResolution = nil
                         }
                     }
                 }
@@ -516,19 +519,25 @@ struct ReusableThumbnailView: View {
         .id(item.id)
     }
     
-    private func loadImage() async {
-        guard image == nil else { return }
-
-        isLoading = true
+    private func loadImage(_ resolution: ThumbnailDisplayMode) async {
+        if image == nil {
+            isLoading = true
+        }
         defer { isLoading = false }
+        
+        let newImage: NSImage?
 
-        switch displayMode {
+        switch resolution {
         case .highRes:
-            image = await PhotoGridThumbnailCache.shared.getThumbnailLarge(for: item)
-        case .lowRes:
-            image = await PhotoGridThumbnailCache.shared.getThumbnailSmall(for: item)
-        case .empty:
-            break
+                newImage = await PhotoGridThumbnailCache.shared.getThumbnailLarge(for: item)
+                case .lowRes:
+                newImage = await PhotoGridThumbnailCache.shared.getThumbnailSmall(for: item)
+                case .empty:
+                newImage = nil
+        }
+        currentResolution = newImage != nil ? resolution : .empty
+        DispatchQueue.main.async {
+            image = newImage
         }
     }
 }
@@ -558,10 +567,8 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
 
         if info.isVisible {
             return .highRes
-        } else if abs(info.rowsFromVisible) <= 1 {
-            return .lowRes
         } else {
-            return .empty
+            return .lowRes
         }
     }
     
