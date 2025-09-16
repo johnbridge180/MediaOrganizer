@@ -67,6 +67,11 @@ enum ThumbnailDisplayMode {
     case highRes
 }
 
+// Display mode configuration constants
+private enum DisplayConfiguration {
+    static let highResMinimumWidthThreshold: CGFloat = 100
+}
+
 // MARK: - Data Source Protocol
 protocol PhotoGridDataSource: ObservableObject {
     associatedtype ItemData
@@ -645,11 +650,6 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     // Memoization for displayMode calculations
     @State private var displayModeCache: [String: ThumbnailDisplayMode] = [:]
     @State private var lastPhotoWidth: CGFloat = 0
-
-    // Display mode configuration constants
-    private enum DisplayConfiguration {
-        static let highResMinimumWidthThreshold: CGFloat = 100
-    }
 
     private func displayMode(for item: PhotoGridItem, photoWidth: CGFloat) -> ThumbnailDisplayMode {
         // Check cache if photo width hasn't changed
