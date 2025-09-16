@@ -574,7 +574,7 @@ struct ReusableThumbnailView: View {
             currentResolution = nil
         }
         .onChange(of: displayMode) { newMode in
-            let wasVisible = (currentResolution == .highRes)
+            _ = (currentResolution == .highRes) // Previously stored for delayed cleanup logic
 
             switch newMode {
             case .highRes, .lowRes:
