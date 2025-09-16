@@ -62,14 +62,19 @@ protocol PhotoGridDataSource: ObservableObject {
 // MARK: - PhotoGridThumbnailCache
 class PhotoGridThumbnailCache {
     static let shared = PhotoGridThumbnailCache()
-    
-    
+
     private let cache = NSCache<NSString, NSImage>()
     private let queue = DispatchQueue(label: "com.mediaorganizer.thumbnailcache", qos: .userInitiated)
-    
+    private let cacheDirectory: URL
+
     private init() {
-        cache.countLimit = 500
-        cache.totalCostLimit = 100 * 1024 * 1024 // 100MB
+        cache.countLimit = 200
+        cache.totalCostLimit = 50 * 1024 * 1024
+
+        let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        cacheDirectory = cachesDirectory.appendingPathComponent("PhotoGridThumbnails")
+
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
     
     @MainActor
@@ -79,6 +84,11 @@ class PhotoGridThumbnailCache {
 
         if let cachedImage = cache.object(forKey: cacheKey as NSString) {
             return cachedImage
+        }
+
+        if let diskImage = await loadFromDisk(cacheKey: cacheKey) {
+            cache.setObject(diskImage, forKey: cacheKey as NSString)
+            return diskImage
         }
 
         return await loadAndCacheImage(for: item, thumbnailSize: thumbnailSize, cacheKey: cacheKey)
@@ -103,6 +113,7 @@ class PhotoGridThumbnailCache {
                     Task { @MainActor in
                         let thumbnail = await self.createThumbnail(from: originalImage, thumbnailSize: thumbnailSize)
                         self.cache.setObject(thumbnail, forKey: cacheKey as NSString)
+                        await self.saveToDisk(image: thumbnail, cacheKey: cacheKey)
                         continuation.resume(returning: thumbnail)
                     }
                 } catch {
@@ -133,29 +144,93 @@ class PhotoGridThumbnailCache {
 
         return thumbnailImage
     }
-    
+
+    private func loadFromDisk(cacheKey: String) async -> NSImage? {
+        return await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self = self else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                let fileURL = self.cacheDirectory.appendingPathComponent("\(cacheKey).jpg")
+                guard FileManager.default.fileExists(atPath: fileURL.path),
+                      let imageData = try? Data(contentsOf: fileURL),
+                      let image = NSImage(data: imageData) else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                continuation.resume(returning: image)
+            }
+        }
+    }
+
+    private func saveToDisk(image: NSImage, cacheKey: String) async {
+        return await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self = self else {
+                    continuation.resume(returning: ())
+                    return
+                }
+
+                let fileURL = self.cacheDirectory.appendingPathComponent("\(cacheKey).jpg")
+
+                guard let tiffData = image.tiffRepresentation,
+                      let bitmapImage = NSBitmapImageRep(data: tiffData),
+                      let jpegData = bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) else {
+                    continuation.resume(returning: ())
+                    return
+                }
+
+                try? jpegData.write(to: fileURL)
+                continuation.resume(returning: ())
+            }
+        }
+    }
+
     func clearCache() {
         cache.removeAllObjects()
+        try? FileManager.default.removeItem(at: cacheDirectory)
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
     
     func removeCachedImage(for itemId: String) {
-        let highResKey = "\(itemId)_high"
-        let tinyKey = "\(itemId)_tiny"
-        cache.removeObject(forKey: highResKey as NSString)
-        cache.removeObject(forKey: tinyKey as NSString)
+        queue.async { [weak self] in
+            guard let self = self else { return }
+
+            let pattern = "\(itemId)_"
+            let fileManager = FileManager.default
+
+            if let enumerator = fileManager.enumerator(at: self.cacheDirectory, includingPropertiesForKeys: nil) {
+                for case let fileURL as URL in enumerator {
+                    if fileURL.lastPathComponent.hasPrefix(pattern) {
+                        try? fileManager.removeItem(at: fileURL)
+                        let cacheKey = String(fileURL.lastPathComponent.dropLast(4))
+                        DispatchQueue.main.async {
+                            self.cache.removeObject(forKey: cacheKey as NSString)
+                        }
+                    }
+                }
+            }
+        }
     }
+}
+
+struct ViewportItemInfo {
+    let itemId: String
+    let isVisible: Bool
+    let rowsFromVisible: Int
 }
 
 // MARK: - ViewportTracker
 class ViewportTracker: ObservableObject {
-    @Published var visibleItems: Set<String> = []
-    @Published var highResItems: Set<String> = []
-    
+    @Published var itemInfo: [String: ViewportItemInfo] = [:]
+
     private let updateQueue: DispatchQueue
     private var lastScrollFrameUpdate: Date = Date()
     private var lastSeenZStackOrigin: CGFloat = 0.0
     private let scrollUpdateDelay: Double = 0.2
-    private let lowresTriggerWidth: Double = 100.0
     
     init() {
         self.updateQueue = DispatchQueue(label: "com.jbridge.viewportUpdateQueue", qos: .background)
@@ -185,33 +260,42 @@ class ViewportTracker: ObservableObject {
             return
         }
         self.lastSeenZStackOrigin = zstackOriginY
-        
+
         guard !gridItems.isEmpty && numColumns > 0 else { return }
-        
-        let assumedIndexRange = getAssumedDisplayedIndexRange(zstackOriginY: zstackOriginY, height: height, numColumns: numColumns, colWidth: colWidth, itemCount: gridItems.count)
-        
+
+        let visibleIndexRange = getAssumedDisplayedIndexRange(zstackOriginY: zstackOriginY, height: height, numColumns: numColumns, colWidth: colWidth, itemCount: gridItems.count)
+
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            
-            if colWidth > self.lowresTriggerWidth {
-                let modifier = numColumns
-                let bigthumbLowerBound = assumedIndexRange.lowerBound - modifier
-                let bigthumbUpperBound = assumedIndexRange.upperBound + modifier
-                let bigthumbIndexRange = max(0, bigthumbLowerBound)...min(gridItems.count - 1, bigthumbUpperBound)
-                
-                let highResItemIds = Set(bigthumbIndexRange.compactMap { index in
-                    index < gridItems.count ? gridItems[index].id : nil
-                })
-                
-                let allVisibleIds = Set(gridItems.map { $0.id })
-                
-                self.highResItems = highResItemIds
-                self.visibleItems = allVisibleIds
-            } else {
-                let allItemIds = Set(gridItems.map { $0.id })
-                self.highResItems = []
-                self.visibleItems = allItemIds
+
+            var newItemInfo: [String: ViewportItemInfo] = [:]
+
+            for (index, item) in gridItems.enumerated() {
+                let isVisible = visibleIndexRange.contains(index)
+                let rowsFromVisible: Int
+
+                if isVisible {
+                    rowsFromVisible = 0
+                } else {
+                    let itemRow = index / numColumns
+                    let visibleStartRow = visibleIndexRange.lowerBound / numColumns
+                    let visibleEndRow = visibleIndexRange.upperBound / numColumns
+
+                    if itemRow < visibleStartRow {
+                        rowsFromVisible = visibleStartRow - itemRow
+                    } else {
+                        rowsFromVisible = itemRow - visibleEndRow
+                    }
+                }
+
+                newItemInfo[item.id] = ViewportItemInfo(
+                    itemId: item.id,
+                    isVisible: isVisible,
+                    rowsFromVisible: rowsFromVisible
+                )
             }
+
+            self.itemInfo = newItemInfo
         }
     }
     
@@ -371,17 +455,18 @@ struct ReusableThumbnailView: View {
             isVisible = false
             image = nil
         }
-        .onChange(of: viewportTracker?.highResItems ?? Set<String>()) { highResItems in
-            let shouldUseHighRes = highResItems.contains(item.id)
+        .onChange(of: viewportTracker?.itemInfo ?? [:]) { itemInfo in
+            guard let info = itemInfo[item.id] else { return }
+
             let wasVisible = isVisible
-            isVisible = (viewportTracker?.visibleItems ?? Set<String>()).contains(item.id)
-            
-            if (shouldUseHighRes && !wasVisible) || (isVisible && image == nil) {
+            isVisible = info.isVisible
+
+            if (info.isVisible && image == nil) || (info.rowsFromVisible <= 1 && image == nil) {
                 Task {
                     await loadImage()
                 }
             }
-            
+
             if !isVisible && wasVisible {
                 Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -401,7 +486,8 @@ struct ReusableThumbnailView: View {
         defer { isLoading = false }
 
         let maxDisplayDimension = max(size.width, size.height)
-        let shouldUseHighRes = (viewportTracker?.highResItems ?? Set<String>()).contains(item.id)
+        let info = viewportTracker?.itemInfo[item.id]
+        let shouldUseHighRes = (info?.isVisible == true) || (info?.rowsFromVisible ?? Int.max) <= 1
         let thumbnailSize: CGFloat = shouldUseHighRes ? max(300.0, maxDisplayDimension) : 100.0
 
         image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, thumbnailSize: thumbnailSize, isHighRes: shouldUseHighRes)
