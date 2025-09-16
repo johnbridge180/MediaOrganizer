@@ -652,8 +652,8 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     @State private var lastPhotoWidth: CGFloat = 0
 
     private func displayMode(for item: PhotoGridItem, photoWidth: CGFloat) -> ThumbnailDisplayMode {
-        // Check cache if photo width hasn't changed
-        if photoWidth == lastPhotoWidth, let cachedMode = displayModeCache[item.id] {
+        // Check cache first
+        if let cachedMode = displayModeCache[item.id] {
             return cachedMode
         }
 
@@ -721,14 +721,7 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             onTap: { item in
                                 onPhotoTap?(item)
                             },
-                            displayMode: {
-                                // Clear cache if photo width changed
-                                if gridViewModel.photoWidth != lastPhotoWidth {
-                                    displayModeCache.removeAll()
-                                    lastPhotoWidth = gridViewModel.photoWidth
-                                }
-                                return displayMode(for: item, photoWidth: gridViewModel.photoWidth)
-                            }()
+                            displayMode: displayMode(for: item, photoWidth: gridViewModel.photoWidth)
                         )
                         
                         if multiSelectEnabled {
@@ -814,6 +807,13 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
             .onChange(of: viewportTracker.itemInfo) { _ in
                 // Clear display mode cache when viewport changes
                 displayModeCache.removeAll()
+            }
+            .onChange(of: gridViewModel.photoWidth) { newWidth in
+                // Clear cache when photo width changes
+                if newWidth != lastPhotoWidth {
+                    displayModeCache.removeAll()
+                    lastPhotoWidth = newWidth
+                }
             }
             .onChange(of: geometry.size) { newValue in
                 if !dataSource.isLoading && !dataSource.items.isEmpty && scrollDirection == .vertical {
