@@ -69,13 +69,20 @@ protocol PhotoGridDataSource: ObservableObject {
 class PhotoGridThumbnailCache {
     static let shared = PhotoGridThumbnailCache()
 
+    // Cache configuration constants
+    private enum CacheConfiguration {
+        static let maxCacheItems = 200
+        static let maxCacheMemoryBytes = 50 * 1024 * 1024 // 50MB
+        static let jpegCompressionQuality: NSNumber = 0.8
+    }
+
     private let cache = NSCache<NSString, NSImage>()
     private let queue = DispatchQueue(label: "com.mediaorganizer.thumbnailcache", qos: .userInitiated)
     private let cacheDirectory: URL
 
     private init() {
-        cache.countLimit = 200
-        cache.totalCostLimit = 50 * 1024 * 1024
+        cache.countLimit = CacheConfiguration.maxCacheItems
+        cache.totalCostLimit = CacheConfiguration.maxCacheMemoryBytes
 
         let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
         cacheDirectory = cachesDirectory.appendingPathComponent("PhotoGridThumbnails")
@@ -227,7 +234,7 @@ class PhotoGridThumbnailCache {
 
                 guard let tiffData = image.tiffRepresentation,
                       let bitmapImage = NSBitmapImageRep(data: tiffData),
-                      let jpegData = bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) else {
+                      let jpegData = bitmapImage.representation(using: .jpeg, properties: [.compressionFactor: CacheConfiguration.jpegCompressionQuality]) else {
                     continuation.resume(returning: ())
                     return
                 }
@@ -274,10 +281,15 @@ struct ViewportItemInfo: Equatable {
 class ViewportTracker: ObservableObject {
     @Published var itemInfo: [String: ViewportItemInfo] = [:]
 
+    // Viewport tracking configuration constants
+    private enum ViewportConfiguration {
+        static let scrollUpdateDelaySeconds: Double = 0.2
+        static let scrollUpdateThreshold: CGFloat = 0.5 // Fraction of cell width
+    }
+
     private let updateQueue: DispatchQueue
     private var lastScrollFrameUpdate: Date = Date()
     private var lastSeenZStackOrigin: CGFloat = 0.0
-    private let scrollUpdateDelay: Double = 0.2
     
     init() {
         self.updateQueue = DispatchQueue(label: "com.jbridge.viewportUpdateQueue", qos: .background)
@@ -287,7 +299,7 @@ class ViewportTracker: ObservableObject {
         let currentUpdate = Date()
         self.lastScrollFrameUpdate = currentUpdate
         
-        updateQueue.asyncAfter(deadline: .now() + scrollUpdateDelay) { [weak self] in
+        updateQueue.asyncAfter(deadline: .now() + ViewportConfiguration.scrollUpdateDelaySeconds) { [weak self] in
             guard let self = self else { return }
             if self.lastScrollFrameUpdate == currentUpdate {
                 self.updateRangeValues(isScrollUpdate: true, zstackOriginY: frame.origin.y, gridItems: gridItems, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
@@ -309,7 +321,7 @@ class ViewportTracker: ObservableObject {
     }
     
     private func updateRangeValues(isScrollUpdate: Bool = false, zstackOriginY: CGFloat, gridItems: [PhotoGridItem], width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
-        let shouldUpdate = !isScrollUpdate || abs(self.lastSeenZStackOrigin - zstackOriginY) >= (colWidth * 0.5)
+        let shouldUpdate = !isScrollUpdate || abs(self.lastSeenZStackOrigin - zstackOriginY) >= (colWidth * ViewportConfiguration.scrollUpdateThreshold)
 
         if !shouldUpdate {
             return
@@ -589,12 +601,17 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     // Selection state
     @State private var selected: [String: Bool] = [:]
 
+    // Display mode configuration constants
+    private enum DisplayConfiguration {
+        static let highResMinimumWidthThreshold: CGFloat = 100
+    }
+
     private func displayMode(for item: PhotoGridItem, photoWidth: CGFloat) -> ThumbnailDisplayMode {
         guard let info = viewportTracker.itemInfo[item.id] else {
             return .empty
         }
 
-        if photoWidth < 100 {
+        if photoWidth < DisplayConfiguration.highResMinimumWidthThreshold {
             return .lowRes
         } else if info.isVisible {
             return .highRes
