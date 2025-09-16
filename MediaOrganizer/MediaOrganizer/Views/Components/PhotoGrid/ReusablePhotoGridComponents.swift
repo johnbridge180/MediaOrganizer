@@ -472,7 +472,6 @@ struct ReusableThumbnailView: View {
     
     @State private var image: NSImage?
     @State private var isLoading = false
-    @State private var isVisible = false
     @State private var currentResolution: ThumbnailDisplayMode?
     
     var body: some View {
@@ -506,13 +505,11 @@ struct ReusableThumbnailView: View {
             }
         }
         .onDisappear {
-            isVisible = false
             image = nil
             currentResolution = nil
         }
         .onChange(of: displayMode) { newMode in
-            let wasVisible = isVisible
-            isVisible = (newMode == .highRes)
+            let wasVisible = (currentResolution == .highRes)
 
             switch newMode {
             case .highRes, .lowRes:
