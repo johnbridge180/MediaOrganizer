@@ -592,7 +592,7 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     @ObservedObject var dataSource: DataSource
     @StateObject private var gridViewModel: ReusablePhotoGridViewModel
     @StateObject private var viewportTracker = ViewportTracker()
-    
+
     @Binding var idealGridItemSize: Double
     @Binding var multiSelectEnabled: Bool
     let minGridItemSize: Double
@@ -601,9 +601,13 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     let dragSelectEnabled: Bool
     let onPhotoTap: ((PhotoGridItem) -> Void)?
     let contextActions: [PhotoGridAction]
-    
+
     // Selection state
     @State private var selected: [String: Bool] = [:]
+
+    // Memoization for displayMode calculations
+    @State private var displayModeCache: [String: ThumbnailDisplayMode] = [:]
+    @State private var lastPhotoWidth: CGFloat = 0
 
     // Display mode configuration constants
     private enum DisplayConfiguration {
@@ -611,17 +615,27 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     }
 
     private func displayMode(for item: PhotoGridItem, photoWidth: CGFloat) -> ThumbnailDisplayMode {
+        // Check cache if photo width hasn't changed
+        if photoWidth == lastPhotoWidth, let cachedMode = displayModeCache[item.id] {
+            return cachedMode
+        }
+
         guard let info = viewportTracker.itemInfo[item.id] else {
             return .empty
         }
 
+        let mode: ThumbnailDisplayMode
         if photoWidth < DisplayConfiguration.highResMinimumWidthThreshold {
-            return .lowRes
+            mode = .lowRes
         } else if info.isVisible {
-            return .highRes
+            mode = .highRes
         } else {
-            return .lowRes
+            mode = .lowRes
         }
+
+        // Update cache
+        displayModeCache[item.id] = mode
+        return mode
     }
     
     // Drag state
@@ -670,7 +684,14 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             onTap: { item in
                                 onPhotoTap?(item)
                             },
-                            displayMode: displayMode(for: item, photoWidth: gridViewModel.photoWidth)
+                            displayMode: {
+                                // Clear cache if photo width changed
+                                if gridViewModel.photoWidth != lastPhotoWidth {
+                                    displayModeCache.removeAll()
+                                    lastPhotoWidth = gridViewModel.photoWidth
+                                }
+                                return displayMode(for: item, photoWidth: gridViewModel.photoWidth)
+                            }()
                         )
                         
                         if multiSelectEnabled {
@@ -752,6 +773,10 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                 if !newValue {
                     selected = [:]
                 }
+            }
+            .onChange(of: viewportTracker.itemInfo) { _ in
+                // Clear display mode cache when viewport changes
+                displayModeCache.removeAll()
             }
             .onChange(of: geometry.size) { newValue in
                 if !dataSource.isLoading && !dataSource.items.isEmpty && scrollDirection == .vertical {
