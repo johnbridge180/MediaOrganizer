@@ -647,32 +647,20 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     // Selection state
     @State private var selected: [String: Bool] = [:]
 
-    // Memoization for displayMode calculations
-    @State private var displayModeCache: [String: ThumbnailDisplayMode] = [:]
-    @State private var lastPhotoWidth: CGFloat = 0
 
     private func displayMode(for item: PhotoGridItem, photoWidth: CGFloat) -> ThumbnailDisplayMode {
-        // Check cache first
-        if let cachedMode = displayModeCache[item.id] {
-            return cachedMode
-        }
-
         guard let info = viewportTracker.itemInfo[item.id] else {
             return .empty
         }
 
-        let mode: ThumbnailDisplayMode
+        // Don't cache based on photoWidth - just calculate each time
         if photoWidth < DisplayConfiguration.highResMinimumWidthThreshold {
-            mode = .lowRes
+            return .lowRes
         } else if info.isVisible {
-            mode = .highRes
+            return .highRes
         } else {
-            mode = .lowRes
+            return .lowRes
         }
-
-        // Update cache
-        displayModeCache[item.id] = mode
-        return mode
     }
     
     // Drag state
@@ -802,17 +790,6 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
             .onChange(of: multiSelectEnabled) { newValue in
                 if !newValue {
                     selected = [:]
-                }
-            }
-            .onChange(of: viewportTracker.itemInfo) { _ in
-                // Clear display mode cache when viewport changes
-                displayModeCache.removeAll()
-            }
-            .onChange(of: gridViewModel.photoWidth) { newWidth in
-                // Clear cache when photo width changes
-                if newWidth != lastPhotoWidth {
-                    displayModeCache.removeAll()
-                    lastPhotoWidth = newWidth
                 }
             }
             .onChange(of: geometry.size) { newValue in
