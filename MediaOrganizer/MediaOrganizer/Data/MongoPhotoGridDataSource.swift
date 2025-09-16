@@ -2,7 +2,7 @@
 //  MongoPhotoGridDataSource.swift
 //  MediaOrganizer
 //
-//  Moved from ReusablePhotoGridComponents.swift on 9/15/25.
+//  Created on 9/15/25.
 //
 
 import Foundation

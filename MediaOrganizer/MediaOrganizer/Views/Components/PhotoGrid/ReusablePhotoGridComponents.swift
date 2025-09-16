@@ -12,7 +12,6 @@ import SwiftUI
 import AppKit
 import Combine
 
-
 // MARK: - Models
 struct PhotoGridItem: Identifiable, Hashable {
     let id: String
@@ -57,7 +56,6 @@ protocol PhotoGridDataSource: ObservableObject {
     func loadItems(offset: Int, length: Int) async throws
     func getMediaItem(for id: String) -> MediaItem?
 }
-
 
 // MARK: - PhotoGridThumbnailCache
 class PhotoGridThumbnailCache {
@@ -222,7 +220,7 @@ class PhotoGridThumbnailCache {
     }
 }
 
-struct ViewportItemInfo {
+struct ViewportItemInfo: Equatable {
     let itemId: String
     let isVisible: Bool
     let rowsFromVisible: Int
@@ -481,7 +479,15 @@ struct ReusableThumbnailView: View {
                 }
             }
         }
-        .id(item.id + "\(size.width)x\(size.height)")
+        .onChange(of: size) { newSize in
+            // Reload image if size significantly changes to get appropriate resolution
+            if abs(newSize.width - size.width) > 50 || abs(newSize.height - size.height) > 50 {
+                Task {
+                    await loadImage()
+                }
+            }
+        }
+        .id(item.id)
     }
     
     private func loadImage() async {
