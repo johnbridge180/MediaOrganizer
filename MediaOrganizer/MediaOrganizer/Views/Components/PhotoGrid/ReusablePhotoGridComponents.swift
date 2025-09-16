@@ -703,36 +703,36 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                     viewportTracker.updateRangeValuesForResize(gridItems: dataSource.items, width: width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
                 }
             }
-        }
-        .onAppear {
-            Task {
-                do {
-                    try await dataSource.loadItems(offset: 0, length: 0)
-                    DispatchQueue.main.async {
-                        let width = scrollDirection == .horizontal ? 
-                            CGFloat(dataSource.items.count) * idealGridItemSize : 
-                            NSScreen.main?.frame.width ?? 1200
-                        let height = scrollDirection == .horizontal ? 
-                            idealGridItemSize : 
-                            NSScreen.main?.frame.height ?? 800
-                        
-                        gridViewModel.setOffsets(
-                            items: dataSource.items,
-                            width: width,
-                            idealGridItemSize: idealGridItemSize
-                        )
-                        
-                        // Initialize viewport tracking like original
-                        viewportTracker.updateRangeValuesForResize(
-                            gridItems: dataSource.items,
-                            width: width,
-                            height: height,
-                            numColumns: gridViewModel.numCols,
-                            colWidth: gridViewModel.photoWidth
-                        )
+            .onAppear {
+                Task {
+                    do {
+                        try await dataSource.loadItems(offset: 0, length: 0)
+                        DispatchQueue.main.async {
+                            let width = scrollDirection == .horizontal ?
+                                CGFloat(dataSource.items.count) * idealGridItemSize :
+                                geometry.size.width
+                            let height = scrollDirection == .horizontal ?
+                                idealGridItemSize :
+                                geometry.size.height
+
+                            gridViewModel.setOffsets(
+                                items: dataSource.items,
+                                width: width,
+                                idealGridItemSize: idealGridItemSize
+                            )
+
+                            // Initialize viewport tracking like original
+                            viewportTracker.updateRangeValuesForResize(
+                                gridItems: dataSource.items,
+                                width: width,
+                                height: height,
+                                numColumns: gridViewModel.numCols,
+                                colWidth: gridViewModel.photoWidth
+                            )
+                        }
+                    } catch {
+                        print("Error loading items: \(error)")
                     }
-                } catch {
-                    print("Error loading items: \(error)")
                 }
             }
         }
