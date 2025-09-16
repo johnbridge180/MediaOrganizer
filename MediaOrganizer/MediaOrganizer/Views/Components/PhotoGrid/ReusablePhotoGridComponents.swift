@@ -168,9 +168,13 @@ class PhotoGridThumbnailCache {
                 let thumbnailSize: CGSize
 
                 if aspectRatio > 1 {
-                    thumbnailSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
+                    let width = maxDimension
+                    let height = round(maxDimension / aspectRatio)
+                    thumbnailSize = CGSize(width: width, height: height)
                 } else {
-                    thumbnailSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
+                    let width = round(maxDimension * aspectRatio)
+                    let height = maxDimension
+                    thumbnailSize = CGSize(width: width, height: height)
                 }
 
                 let thumbnailImage = NSImage(size: thumbnailSize)
