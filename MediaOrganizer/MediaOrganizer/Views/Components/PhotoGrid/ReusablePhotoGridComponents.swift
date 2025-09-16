@@ -479,14 +479,6 @@ struct ReusableThumbnailView: View {
                 }
             }
         }
-        .onChange(of: size) { newSize in
-            // Reload image if size significantly changes to get appropriate resolution
-            if abs(newSize.width - size.width) > 50 || abs(newSize.height - size.height) > 50 {
-                Task {
-                    await loadImage()
-                }
-            }
-        }
         .id(item.id)
     }
     
