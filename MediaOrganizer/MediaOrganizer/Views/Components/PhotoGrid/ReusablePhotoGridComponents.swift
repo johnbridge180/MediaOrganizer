@@ -50,11 +50,13 @@ enum PhotoGridError: Error {
 
 // MARK: - Data Source Protocol
 protocol PhotoGridDataSource: ObservableObject {
+    associatedtype ItemData
+
     var items: [PhotoGridItem] { get }
     var isLoading: Bool { get }
 
     func loadItems(offset: Int, length: Int) async throws
-    func getMediaItem(for id: String) -> MediaItem?
+    func getItemData(for id: String) -> ItemData?
 }
 
 // MARK: - PhotoGridThumbnailCache
@@ -75,10 +77,37 @@ class PhotoGridThumbnailCache {
         try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
     
+    private enum ThumbnailSize {
+        case small  // 100px
+        case large  // 512px
+
+        var maxDimension: CGFloat {
+            switch self {
+            case .small: return 100.0
+            case .large: return 512.0
+            }
+        }
+
+        var cacheKey: String {
+            switch self {
+            case .small: return "small"
+            case .large: return "large"
+            }
+        }
+    }
+
     @MainActor
-    func getThumbnail(for item: PhotoGridItem, thumbnailSize: CGFloat, isHighRes: Bool = true) async -> NSImage? {
-        let thumbnailType = isHighRes ? "high" : "tiny"
-        let cacheKey = "\(item.id)_\(thumbnailType)_\(Int(thumbnailSize))"
+    func getThumbnailSmall(for item: PhotoGridItem) async -> NSImage? {
+        return await getThumbnail(for: item, size: .small)
+    }
+
+    @MainActor
+    func getThumbnailLarge(for item: PhotoGridItem) async -> NSImage? {
+        return await getThumbnail(for: item, size: .large)
+    }
+
+    private func getThumbnail(for item: PhotoGridItem, size: ThumbnailSize) async -> NSImage? {
+        let cacheKey = "\(item.id)_\(size.cacheKey)"
 
         if let cachedImage = cache.object(forKey: cacheKey as NSString) {
             return cachedImage
@@ -89,10 +118,10 @@ class PhotoGridThumbnailCache {
             return diskImage
         }
 
-        return await loadAndCacheImage(for: item, thumbnailSize: thumbnailSize, cacheKey: cacheKey)
+        return await loadAndCacheImage(for: item, size: size, cacheKey: cacheKey)
     }
     
-    private func loadAndCacheImage(for item: PhotoGridItem, thumbnailSize: CGFloat, cacheKey: String) async -> NSImage? {
+    private func loadAndCacheImage(for item: PhotoGridItem, size: ThumbnailSize, cacheKey: String) async -> NSImage? {
         return await withCheckedContinuation { continuation in
             queue.async { [weak self] in
                 guard let self = self else {
@@ -109,7 +138,7 @@ class PhotoGridThumbnailCache {
                     }
                     
                     Task {
-                        let thumbnail = await self.createThumbnail(from: originalImage, thumbnailSize: thumbnailSize)
+                        let thumbnail = await self.createThumbnail(from: originalImage, size: size)
                         await MainActor.run {
                             self.cache.setObject(thumbnail, forKey: cacheKey as NSString)
                         }
@@ -123,10 +152,11 @@ class PhotoGridThumbnailCache {
         }
     }
     
-    private func createThumbnail(from image: NSImage, thumbnailSize maxDimension: CGFloat) async -> NSImage {
+    private func createThumbnail(from image: NSImage, size: ThumbnailSize) async -> NSImage {
         return await withCheckedContinuation { continuation in
             queue.async {
                 let sourceSize = image.size
+                let maxDimension = size.maxDimension
 
                 let aspectRatio = sourceSize.width / sourceSize.height
                 let thumbnailSize: CGSize
@@ -199,23 +229,21 @@ class PhotoGridThumbnailCache {
     }
     
     func removeCachedImage(for itemId: String) {
+        let smallKey = "\(itemId)_small"
+        let largeKey = "\(itemId)_large"
+
+        cache.removeObject(forKey: smallKey as NSString)
+        cache.removeObject(forKey: largeKey as NSString)
+
         queue.async { [weak self] in
             guard let self = self else { return }
-
-            let pattern = "\(itemId)_"
             let fileManager = FileManager.default
 
-            if let enumerator = fileManager.enumerator(at: self.cacheDirectory, includingPropertiesForKeys: nil) {
-                for case let fileURL as URL in enumerator {
-                    if fileURL.lastPathComponent.hasPrefix(pattern) {
-                        try? fileManager.removeItem(at: fileURL)
-                        let cacheKey = String(fileURL.lastPathComponent.dropLast(4))
-                        DispatchQueue.main.async {
-                            self.cache.removeObject(forKey: cacheKey as NSString)
-                        }
-                    }
-                }
-            }
+            let smallFile = self.cacheDirectory.appendingPathComponent("\(smallKey).jpg")
+            let largeFile = self.cacheDirectory.appendingPathComponent("\(largeKey).jpg")
+
+            try? fileManager.removeItem(at: smallFile)
+            try? fileManager.removeItem(at: largeFile)
         }
     }
 }
@@ -271,37 +299,37 @@ class ViewportTracker: ObservableObject {
 
         let visibleIndexRange = getAssumedDisplayedIndexRange(zstackOriginY: zstackOriginY, height: height, numColumns: numColumns, colWidth: colWidth, itemCount: gridItems.count)
 
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+        // Do calculations on background queue
+        var newItemInfo: [String: ViewportItemInfo] = [:]
 
-            var newItemInfo: [String: ViewportItemInfo] = [:]
+        for (index, item) in gridItems.enumerated() {
+            let isVisible = visibleIndexRange.contains(index)
+            let rowsFromVisible: Int
 
-            for (index, item) in gridItems.enumerated() {
-                let isVisible = visibleIndexRange.contains(index)
-                let rowsFromVisible: Int
+            if isVisible {
+                rowsFromVisible = 0
+            } else {
+                let itemRow = index / numColumns
+                let visibleStartRow = visibleIndexRange.lowerBound / numColumns
+                let visibleEndRow = visibleIndexRange.upperBound / numColumns
 
-                if isVisible {
-                    rowsFromVisible = 0
+                if itemRow < visibleStartRow {
+                    rowsFromVisible = visibleStartRow - itemRow
                 } else {
-                    let itemRow = index / numColumns
-                    let visibleStartRow = visibleIndexRange.lowerBound / numColumns
-                    let visibleEndRow = visibleIndexRange.upperBound / numColumns
-
-                    if itemRow < visibleStartRow {
-                        rowsFromVisible = visibleStartRow - itemRow
-                    } else {
-                        rowsFromVisible = itemRow - visibleEndRow
-                    }
+                    rowsFromVisible = itemRow - visibleEndRow
                 }
-
-                newItemInfo[item.id] = ViewportItemInfo(
-                    itemId: item.id,
-                    isVisible: isVisible,
-                    rowsFromVisible: rowsFromVisible
-                )
             }
 
-            self.itemInfo = newItemInfo
+            newItemInfo[item.id] = ViewportItemInfo(
+                itemId: item.id,
+                isVisible: isVisible,
+                rowsFromVisible: rowsFromVisible
+            )
+        }
+
+        // Only update published variable on main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.itemInfo = newItemInfo
         }
     }
     
@@ -488,12 +516,14 @@ struct ReusableThumbnailView: View {
         isLoading = true
         defer { isLoading = false }
 
-        let maxDisplayDimension = max(size.width, size.height)
         let info = viewportTracker?.itemInfo[item.id]
         let shouldUseHighRes = (info?.isVisible == true) || (info?.rowsFromVisible ?? Int.max) <= 1
-        let thumbnailSize: CGFloat = shouldUseHighRes ? max(300.0, maxDisplayDimension) : 100.0
 
-        image = await PhotoGridThumbnailCache.shared.getThumbnail(for: item, thumbnailSize: thumbnailSize, isHighRes: shouldUseHighRes)
+        if shouldUseHighRes {
+            image = await PhotoGridThumbnailCache.shared.getThumbnailLarge(for: item)
+        } else {
+            image = await PhotoGridThumbnailCache.shared.getThumbnailSmall(for: item)
+        }
     }
 }
 

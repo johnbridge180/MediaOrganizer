@@ -11,6 +11,7 @@ import SwiftBSON
 import MongoSwift
 
 class MongoPhotoGridDataSource: PhotoGridDataSource {
+    typealias ItemData = MediaItem
     @Published var items: [PhotoGridItem] = []
     @Published var isLoading: Bool = false
 
@@ -74,7 +75,12 @@ class MongoPhotoGridDataSource: PhotoGridDataSource {
         }
     }
 
-    func getMediaItem(for id: String) -> MediaItem? {
+    func getItemData(for id: String) -> MediaItem? {
         return mediaItems[id]
+    }
+
+    // Legacy compatibility method
+    func getMediaItem(for id: String) -> MediaItem? {
+        return getItemData(for: id)
     }
 }
