@@ -110,9 +110,11 @@ class PhotoGridThumbnailCache {
                         return
                     }
                     
-                    Task { @MainActor in
+                    Task {
                         let thumbnail = await self.createThumbnail(from: originalImage, thumbnailSize: thumbnailSize)
-                        self.cache.setObject(thumbnail, forKey: cacheKey as NSString)
+                        await MainActor.run {
+                            self.cache.setObject(thumbnail, forKey: cacheKey as NSString)
+                        }
                         await self.saveToDisk(image: thumbnail, cacheKey: cacheKey)
                         continuation.resume(returning: thumbnail)
                     }
@@ -123,26 +125,29 @@ class PhotoGridThumbnailCache {
         }
     }
     
-    @MainActor
     private func createThumbnail(from image: NSImage, thumbnailSize maxDimension: CGFloat) async -> NSImage {
-        let sourceSize = image.size
+        return await withCheckedContinuation { continuation in
+            queue.async {
+                let sourceSize = image.size
 
-        let aspectRatio = sourceSize.width / sourceSize.height
-        let thumbnailSize: CGSize
+                let aspectRatio = sourceSize.width / sourceSize.height
+                let thumbnailSize: CGSize
 
-        if aspectRatio > 1 {
-            thumbnailSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
-        } else {
-            thumbnailSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
+                if aspectRatio > 1 {
+                    thumbnailSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
+                } else {
+                    thumbnailSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
+                }
+
+                let thumbnailImage = NSImage(size: thumbnailSize)
+
+                thumbnailImage.lockFocus()
+                image.draw(in: NSRect(origin: .zero, size: thumbnailSize))
+                thumbnailImage.unlockFocus()
+
+                continuation.resume(returning: thumbnailImage)
+            }
         }
-
-        let thumbnailImage = NSImage(size: thumbnailSize)
-
-        thumbnailImage.lockFocus()
-        image.draw(in: NSRect(origin: .zero, size: thumbnailSize))
-        thumbnailImage.unlockFocus()
-
-        return thumbnailImage
     }
 
     private func loadFromDisk(cacheKey: String) async -> NSImage? {
@@ -256,9 +261,12 @@ class ViewportTracker: ObservableObject {
     }
     
     private func updateRangeValues(isScrollUpdate: Bool = false, zstackOriginY: CGFloat, gridItems: [PhotoGridItem], width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
-        if isScrollUpdate && abs(self.lastSeenZStackOrigin - zstackOriginY) < colWidth {
+        let shouldUpdate = !isScrollUpdate || abs(self.lastSeenZStackOrigin - zstackOriginY) >= (colWidth * 0.5)
+
+        if !shouldUpdate {
             return
         }
+
         self.lastSeenZStackOrigin = zstackOriginY
 
         guard !gridItems.isEmpty && numColumns > 0 else { return }
@@ -363,28 +371,25 @@ class ReusablePhotoGridViewModel: ObservableObject {
     }
     
     func getPhotosInRectangle(_ rect: (x1: CGFloat, y1: CGFloat, x2: CGFloat, y2: CGFloat), items: [PhotoGridItem]) -> [String] {
+        guard numCols > 0 && photoWidth > 0 else { return [] }
+
+        let startRow = max(0, Int(rect.y1 / photoWidth))
+        let endRow = min(Int(ceil(rect.y2 / photoWidth)), Int(ceil(CGFloat(items.count) / CGFloat(numCols))) - 1)
+        let startCol = max(0, Int(rect.x1 / photoWidth))
+        let endCol = min(Int(ceil(rect.x2 / photoWidth)) - 1, numCols - 1)
+
         var photoIds: [String] = []
-        
-        let startRow = Int(rect.y1 / photoWidth)
-        let endRow = Int(rect.y2 / photoWidth)
-        var startCol = Int(rect.x1 / photoWidth)
-        var endCol = Int(rect.x2 / photoWidth)
-        
-        if startCol >= numCols { startCol = numCols - 1 } else if startCol < 0 { startCol = 0 }
-        if endCol >= numCols { endCol = numCols - 1 } else if endCol < 0 { endCol = 0 }
-        
-        var i = startRow * numCols
-        while i <= endRow * numCols && i <= items.count {
-            var k = startCol
-            while k <= endCol {
-                if i + k >= items.count {
-                    break
+        photoIds.reserveCapacity((endRow - startRow + 1) * (endCol - startCol + 1))
+
+        for row in startRow...endRow {
+            for col in startCol...endCol {
+                let index = row * numCols + col
+                if index < items.count {
+                    photoIds.append(items[index].id)
                 }
-                photoIds.append(items[i + k].id)
-                k += 1
             }
-            i += numCols
         }
+
         return photoIds
     }
     
@@ -766,7 +771,9 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
             y2: yValues.max()!
         )
         
-        if !(rectangle.x1 == 0 && rectangle.y1 == 0 && rectangle.x2 == 0 && rectangle.y2 == 0) {
+        let hasValidRectangle = rectangle.x2 > rectangle.x1 && rectangle.y2 > rectangle.y1
+
+        if hasValidRectangle {
             if !NSEvent.modifierFlags.contains(.command) {
                 selected = [:]
             }
