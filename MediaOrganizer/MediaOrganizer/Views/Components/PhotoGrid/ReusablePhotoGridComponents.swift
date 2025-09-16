@@ -180,7 +180,12 @@ class PhotoGridThumbnailCache {
                 let thumbnailImage = NSImage(size: thumbnailSize)
 
                 thumbnailImage.lockFocus()
-                image.draw(in: NSRect(origin: .zero, size: thumbnailSize))
+                NSGraphicsContext.current?.imageInterpolation = .high
+                NSGraphicsContext.current?.shouldAntialias = false
+                image.draw(in: NSRect(origin: .zero, size: thumbnailSize),
+                          from: NSRect(origin: .zero, size: sourceSize),
+                          operation: .copy,
+                          fraction: 1.0)
                 thumbnailImage.unlockFocus()
 
                 continuation.resume(returning: thumbnailImage)
