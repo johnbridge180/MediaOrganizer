@@ -793,10 +793,10 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
         let xValues = [dragStart.x, dragEnd.x]
         let yValues = [dragStart.y, dragEnd.y]
         let rectangle = (
-            x1: xValues.min()!,
-            y1: yValues.min()!,
-            x2: xValues.max()!,
-            y2: yValues.max()!
+            x1: xValues.min() ?? 0,
+            y1: yValues.min() ?? 0,
+            x2: xValues.max() ?? 0,
+            y2: yValues.max() ?? 0
         )
         
         let hasValidRectangle = rectangle.x2 > rectangle.x1 && rectangle.y2 > rectangle.y1
