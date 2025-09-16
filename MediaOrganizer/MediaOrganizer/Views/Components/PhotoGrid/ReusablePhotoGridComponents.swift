@@ -89,19 +89,13 @@ class PhotoGridThumbnailCache {
 
     // Cache configuration constants
     private enum CacheConfiguration {
-        static let maxCacheItems = 200
-        static let maxCacheMemoryBytes = 50 * 1024 * 1024 // 50MB
         static let jpegCompressionQuality: NSNumber = 0.8
     }
 
-    private let cache = NSCache<NSString, NSImage>()
     private let queue = DispatchQueue(label: "com.mediaorganizer.thumbnailcache", qos: .userInitiated)
     private let cacheDirectory: URL
 
     private init() {
-        cache.countLimit = CacheConfiguration.maxCacheItems
-        cache.totalCostLimit = CacheConfiguration.maxCacheMemoryBytes
-
         let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
         cacheDirectory = cachesDirectory.appendingPathComponent("PhotoGridThumbnails")
 
@@ -140,12 +134,7 @@ class PhotoGridThumbnailCache {
     private func getThumbnail(for item: PhotoGridItem, size: ThumbnailSize) async -> NSImage? {
         let cacheKey = "\(item.id)_\(size.cacheKey)"
 
-        if let cachedImage = cache.object(forKey: cacheKey as NSString) {
-            return cachedImage
-        }
-
         if let diskImage = await loadFromDisk(cacheKey: cacheKey) {
-            cache.setObject(diskImage, forKey: cacheKey as NSString)
             return diskImage
         }
 
@@ -170,9 +159,6 @@ class PhotoGridThumbnailCache {
                     
                     Task {
                         let thumbnail = await self.createThumbnail(from: originalImage, size: size)
-                        await MainActor.run {
-                            self.cache.setObject(thumbnail, forKey: cacheKey as NSString)
-                        }
                         await self.saveToDisk(image: thumbnail, cacheKey: cacheKey)
                         continuation.resume(returning: thumbnail)
                     }
@@ -269,7 +255,6 @@ class PhotoGridThumbnailCache {
     }
 
     func clearCache() {
-        cache.removeAllObjects()
         do {
             try FileManager.default.removeItem(at: cacheDirectory)
             try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
@@ -281,9 +266,6 @@ class PhotoGridThumbnailCache {
     func removeCachedImage(for itemId: String) {
         let smallKey = "\(itemId)_small"
         let largeKey = "\(itemId)_large"
-
-        cache.removeObject(forKey: smallKey as NSString)
-        cache.removeObject(forKey: largeKey as NSString)
 
         queue.async { [weak self] in
             guard let self = self else { return }
@@ -574,22 +556,15 @@ struct ReusableThumbnailView: View {
             currentResolution = nil
         }
         .onChange(of: displayMode) { newMode in
-            _ = (currentResolution == .highRes) // Previously stored for delayed cleanup logic
-
             switch newMode {
             case .highRes, .lowRes:
                 if image == nil || currentResolution != newMode {
-                    // Cancel previous loading task and clear current image immediately
                     loadingTask?.cancel()
-                    if currentResolution != newMode && image != nil {
-                        image = nil
-                    }
                     loadingTask = Task {
                         await loadImage(newMode)
                     }
                 }
             case .empty:
-                // Cancel any loading task and immediate cleanup
                 loadingTask?.cancel()
                 loadingTask = nil
                 image = nil
@@ -646,7 +621,6 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
 
     // Selection state
     @State private var selected: [String: Bool] = [:]
-
 
     private func displayMode(for item: PhotoGridItem, photoWidth: CGFloat) -> ThumbnailDisplayMode {
         guard let info = viewportTracker.itemInfo[item.id] else {
