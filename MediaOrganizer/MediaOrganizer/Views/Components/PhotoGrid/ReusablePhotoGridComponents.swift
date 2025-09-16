@@ -477,6 +477,7 @@ struct ReusableThumbnailView: View {
     @State private var image: NSImage?
     @State private var isLoading = false
     @State private var currentResolution: ThumbnailDisplayMode?
+    @State private var loadingTask: Task<Void, Never>?
     
     var body: some View {
         ZStack {
@@ -504,11 +505,13 @@ struct ReusableThumbnailView: View {
             }
         }
         .onAppear {
-            Task {
+            loadingTask = Task {
                 await loadImage(displayMode)
             }
         }
         .onDisappear {
+            loadingTask?.cancel()
+            loadingTask = nil
             image = nil
             currentResolution = nil
         }
@@ -518,16 +521,19 @@ struct ReusableThumbnailView: View {
             switch newMode {
             case .highRes, .lowRes:
                 if image == nil || currentResolution != newMode {
-                    // Clear current image immediately when switching resolutions to free memory
+                    // Cancel previous loading task and clear current image immediately
+                    loadingTask?.cancel()
                     if currentResolution != newMode && image != nil {
                         image = nil
                     }
-                    Task {
+                    loadingTask = Task {
                         await loadImage(newMode)
                     }
                 }
             case .empty:
-                // Immediate cleanup instead of delayed
+                // Cancel any loading task and immediate cleanup
+                loadingTask?.cancel()
+                loadingTask = nil
                 image = nil
                 currentResolution = nil
             }
@@ -540,17 +546,24 @@ struct ReusableThumbnailView: View {
             isLoading = true
         }
         defer { isLoading = false }
-        
+
+        // Check for cancellation before starting expensive operation
+        guard !Task.isCancelled else { return }
+
         let newImage: NSImage?
 
         switch resolution {
         case .highRes:
-                newImage = await PhotoGridThumbnailCache.shared.getThumbnailLarge(for: item)
-                case .lowRes:
-                newImage = await PhotoGridThumbnailCache.shared.getThumbnailSmall(for: item)
-                case .empty:
-                newImage = nil
+            newImage = await PhotoGridThumbnailCache.shared.getThumbnailLarge(for: item)
+        case .lowRes:
+            newImage = await PhotoGridThumbnailCache.shared.getThumbnailSmall(for: item)
+        case .empty:
+            newImage = nil
         }
+
+        // Check for cancellation before updating UI
+        guard !Task.isCancelled else { return }
+
         currentResolution = newImage != nil ? resolution : .empty
         DispatchQueue.main.async {
             image = newImage
