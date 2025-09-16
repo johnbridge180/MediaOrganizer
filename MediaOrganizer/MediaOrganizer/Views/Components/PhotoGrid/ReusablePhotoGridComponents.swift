@@ -569,12 +569,14 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
     // Selection state
     @State private var selected: [String: Bool] = [:]
 
-    private func displayMode(for item: PhotoGridItem) -> ThumbnailDisplayMode {
+    private func displayMode(for item: PhotoGridItem, photoWidth: CGFloat) -> ThumbnailDisplayMode {
         guard let info = viewportTracker.itemInfo[item.id] else {
             return .empty
         }
 
-        if info.isVisible {
+        if photoWidth < 100 {
+            return .lowRes
+        } else if info.isVisible {
             return .highRes
         } else {
             return .lowRes
@@ -627,7 +629,7 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                             onTap: { item in
                                 onPhotoTap?(item)
                             },
-                            displayMode: displayMode(for: item)
+                            displayMode: displayMode(for: item, photoWidth: gridViewModel.photoWidth)
                         )
                         
                         if multiSelectEnabled {
