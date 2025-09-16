@@ -177,16 +177,17 @@ class PhotoGridThumbnailCache {
                     thumbnailSize = CGSize(width: width, height: height)
                 }
 
-                let thumbnailImage = NSImage(size: thumbnailSize)
+                let thumbnailImage = NSImage(size: thumbnailSize, flipped: false) { rect in
+                    guard let context = NSGraphicsContext.current?.cgContext else { return false }
 
-                thumbnailImage.lockFocus()
-                NSGraphicsContext.current?.imageInterpolation = .high
-                NSGraphicsContext.current?.shouldAntialias = false
-                image.draw(in: NSRect(origin: .zero, size: thumbnailSize),
-                          from: NSRect(origin: .zero, size: sourceSize),
-                          operation: .copy,
-                          fraction: 1.0)
-                thumbnailImage.unlockFocus()
+                    context.interpolationQuality = .high
+                    context.setShouldAntialias(false)
+
+                    if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                        context.draw(cgImage, in: rect)
+                    }
+                    return true
+                }
 
                 continuation.resume(returning: thumbnailImage)
             }
