@@ -297,7 +297,13 @@ class ViewportTracker: ObservableObject {
     func updateRangeValuesForResize(gridItems: [PhotoGridItem], width: CGFloat, height: CGFloat, numColumns: Int, colWidth: CGFloat) {
         updateQueue.async { [weak self] in
             guard let self = self else { return }
-            self.updateRangeValues(zstackOriginY: self.lastSeenZStackOrigin, gridItems: gridItems, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
+
+            // Clamp lastSeenZStackOrigin to valid bounds for the new grid dimensions
+            let maxRows = numColumns > 0 ? Int(ceil(Double(gridItems.count) / Double(numColumns))) : 0
+            let maxZStackHeight = CGFloat(maxRows) * colWidth
+            let clampedOriginY = min(self.lastSeenZStackOrigin, max(0, maxZStackHeight - height))
+
+            self.updateRangeValues(zstackOriginY: clampedOriginY, gridItems: gridItems, width: width, height: height, numColumns: numColumns, colWidth: colWidth)
         }
     }
     
@@ -353,7 +359,9 @@ class ViewportTracker: ObservableObject {
         let numRowsAboveVisibleArea: Int = Int(zstackOriginY > 0 || colWidth == 0 ? 0 : abs(zstackOriginY) / colWidth)
         let startIndex: Int = numRowsAboveVisibleArea * numColumns
         let endIndex = min(itemCount - 1, startIndex + assumedAmtDisplayed)
-        return max(0, startIndex)...max(0, endIndex)
+        let clampedStartIndex = max(0, min(startIndex, itemCount - 1))
+        let clampedEndIndex = max(0, min(endIndex, itemCount - 1))
+        return clampedStartIndex...max(clampedStartIndex, clampedEndIndex)
     }
 }
 
@@ -737,8 +745,8 @@ struct ReusablePhotoGrid<DataSource: PhotoGridDataSource>: View {
                                 idealGridItemSize: newValue
                             )
                         }
+                        viewportTracker.updateRangeValuesForResize(gridItems: dataSource.items, width: width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
                     }
-                    viewportTracker.updateRangeValuesForResize(gridItems: dataSource.items, width: width, height: geometry.size.height, numColumns: gridViewModel.numCols, colWidth: gridViewModel.photoWidth)
                 }
             }
             .onAppear {
