@@ -58,11 +58,9 @@ class DownloadManager: NSObject, ObservableObject, URLSessionDelegate, URLSessio
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        print(location)
         do {
             if FileManager.default.fileExists(atPath: location.path) {
                 if let response = downloadTask.response, let responseURL = response.url, let model = self.downloadsDictionary[responseURL.absoluteString] {
-                    print("\(model.destination.path)")
                     try FileManager.default.moveItem(at: location, to: model.destination)
                     model.setCompleted()
                 }
